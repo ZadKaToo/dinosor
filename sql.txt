@@ -4,45 +4,47 @@
 
 DROP TABLE IF EXISTS chat_messages CASCADE;
 DROP TABLE IF EXISTS chat_sessions CASCADE;
+DROP TABLE IF EXISTS user_certified_skills CASCADE;
 DROP TABLE IF EXISTS user_skill_gaps CASCADE;
 DROP TABLE IF EXISTS user_interactions CASCADE;
+DROP TABLE IF EXISTS quizzes CASCADE;
+DROP TABLE IF EXISTS course_lessons CASCADE;
 DROP TABLE IF EXISTS course_skills CASCADE;
-DROP TABLE IF EXISTS user_settings CASCADE;
 DROP TABLE IF EXISTS saved_courses CASCADE;
 DROP TABLE IF EXISTS user_course_history CASCADE;
-DROP TABLE IF EXISTS course_lessons CASCADE;
+DROP TABLE IF EXISTS job_skills CASCADE;
+DROP TABLE IF EXISTS jobs CASCADE;
 DROP TABLE IF EXISTS courses CASCADE;
+DROP TABLE IF EXISTS user_settings CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS user_guides CASCADE;
 DROP TABLE IF EXISTS skills_tags CASCADE;
 
--- ลบตารางจากเวอร์ชันเก่าที่อาจจะยังมีค้างอยู่ใน Database
-DROP TABLE IF EXISTS career_tracks CASCADE;
-DROP TABLE IF EXISTS notifications CASCADE;
-DROP TABLE IF EXISTS app_manuals CASCADE;
-
 -- ========================================================
--- 1. สร้างตารางหลักที่ไม่มี Foreign Key อ้างอิงตารางอื่น
+-- 1. สร้างตารางหลักที่ไม่มี Foreign Key (Master / Tags / Guides)
 -- ========================================================
 
+-- ตารางคลังทักษะกลาง (ใช้ร่วมกันทั้งระบบ คอร์ส งาน และ Skill Gap)
 CREATE TABLE skills_tags (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    category VARCHAR(100)
+    name VARCHAR(255) UNIQUE NOT NULL,
+    category VARCHAR(100) -- เช่น Data & AI, Software, Design
 );
 
--- ตารางสำหรับหน้า User Guide / Manual ใน Side Tab
+-- ตารางคู่มือแนะนำการทำงาน (Guides/UserGuideList)
 CREATE TABLE user_guides (
     id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
-    content TEXT NOT NULL,
-    category VARCHAR(100) DEFAULT 'general',
-    order_index INT DEFAULT 0,
+    summary TEXT NOT NULL,
+    content TEXT,
+    category VARCHAR(100) DEFAULT 'general', -- เทคนิคสัมภาษณ์งาน, การเขียนเรซูเม่ ฯลฯ
+    reading_time_mins INT DEFAULT 5,
+    views_count INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ========================================================
--- 2. สร้างตาราง Users & Courses (ไม่มี Video และไม่มี Career Track)
+-- 2. สร้างตาราง Users & Settings
 -- ========================================================
 
 CREATE TABLE users (
@@ -51,55 +53,12 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
     avatar_url VARCHAR(255),
+    target_role VARCHAR(255), -- ตำแหน่งเป้าหมาย เช่น Junior Data Analyst
+    job_status VARCHAR(50) DEFAULT 'seeking', -- seeking, job_ready, employed
+    readiness_score INT DEFAULT 0 CHECK (readiness_score >= 0 AND readiness_score <= 100),
     bio TEXT,
     phone VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE courses (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    title VARCHAR(255) NOT NULL,
-    summary TEXT, -- สรุปย่อสำหรับแสดงบน Feed หน้า Index
-    cover_image_url VARCHAR(255), -- รูปภาพประกอบสไตล์ Facebook Post
-    max_potential_salary DECIMAL(10,2) NOT NULL,
-    estimated_read_time_mins INT DEFAULT 10, -- เวลาอ่านโดยประมาณ (นาที)
-    difficulty_level VARCHAR(20) CHECK (difficulty_level IN ('beginner', 'intermediate', 'advanced')),
-    like_count INT DEFAULT 0,
-    share_count INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- ตารางบทเรียนย่อยเน้นการอ่าน (Text/Article/Quiz Lessons)
-CREATE TABLE course_lessons (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-    title VARCHAR(255) NOT NULL,
-    content TEXT NOT NULL, -- เนื้อหาบทเรียน (รองรับ Markdown / HTML)
-    order_index INT NOT NULL DEFAULT 1,
-    estimated_read_time_mins INT DEFAULT 5,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- ========================================================
--- 3. สร้างตารางข้อมูลการใช้งาน (Side Tab Data)
--- ========================================================
-
-CREATE TABLE user_course_history (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-    last_lesson_id UUID REFERENCES course_lessons(id) ON DELETE SET NULL, -- อ่านถึงบทเรียนไหน
-    status VARCHAR(20) NOT NULL CHECK (status IN ('in_progress', 'completed')),
-    progress_percent INT DEFAULT 0 CHECK (progress_percent >= 0 AND progress_percent <= 100),
-    last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    completed_at TIMESTAMP
-);
-
-CREATE TABLE saved_courses (
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-    saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, course_id)
 );
 
 CREATE TABLE user_settings (
@@ -110,39 +69,143 @@ CREATE TABLE user_settings (
 );
 
 -- ========================================================
--- 4. สร้างตารางระบบแนะนำคอร์สเรียน (Recommendation System)
+-- 3. สร้างตาราง Jobs & Market Matching (ตลาดแรงงานและฐานเงินเดือน)
 -- ========================================================
 
+CREATE TABLE jobs (
+    id VARCHAR(50) PRIMARY KEY, -- เช่น JOB001
+    title VARCHAR(255) NOT NULL,
+    company VARCHAR(255) NOT NULL,
+    location VARCHAR(255) NOT NULL,
+    salary_min DECIMAL(10,2) NOT NULL,
+    salary_max DECIMAL(10,2) NOT NULL,
+    category VARCHAR(100),
+    experience VARCHAR(50), -- 0-2 ปี
+    missing_skill_recommendation VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ทักษะที่บริษัทต้องการในแต่ละตำแหน่งงาน
+CREATE TABLE job_skills (
+    job_id VARCHAR(50) NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+    skill_id INT NOT NULL REFERENCES skills_tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (job_id, skill_id)
+);
+
+-- ========================================================
+-- 4. สร้างตาราง Courses, Lessons & Quizzes
+-- ========================================================
+
+CREATE TABLE courses (
+    id VARCHAR(50) PRIMARY KEY, -- เช่น CRS001
+    title VARCHAR(255) NOT NULL,
+    category VARCHAR(100),
+    summary TEXT,
+    cover_image_url VARCHAR(255),
+    duration_text VARCHAR(50), -- เช่น 4 ชั่วโมง 30 นาที
+    difficulty_level VARCHAR(50), -- ผู้เริ่มต้น, ระดับกลาง, ขั้นสูง
+    rating DECIMAL(3,2) DEFAULT 5.00,
+    instructor VARCHAR(255),
+    badge_earned VARCHAR(255), -- เช่น SQL Certified Specialist
+    total_lessons INT DEFAULT 1,
+    like_count INT DEFAULT 0,
+    share_count INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ทักษะที่จะได้รับเมื่อเรียนจบคอร์สนี้
 CREATE TABLE course_skills (
-    course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    course_id VARCHAR(50) NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
     skill_id INT NOT NULL REFERENCES skills_tags(id) ON DELETE CASCADE,
     PRIMARY KEY (course_id, skill_id)
+);
+
+-- ตารางบทเรียนย่อย
+CREATE TABLE course_lessons (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    course_id VARCHAR(50) NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    order_index INT NOT NULL DEFAULT 1,
+    estimated_read_time_mins INT DEFAULT 5,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ตารางแบบทดสอบวัดระดับ / ท้ายบทเรียน (Interactive Quiz)
+CREATE TABLE quizzes (
+    id VARCHAR(50) PRIMARY KEY, -- เช่น QZ001
+    course_id VARCHAR(50) NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    lesson_order INT DEFAULT 1,
+    question TEXT NOT NULL,
+    option_1 TEXT NOT NULL,
+    option_2 TEXT NOT NULL,
+    option_3 TEXT NOT NULL,
+    option_4 TEXT NOT NULL,
+    correct_answer_index INT NOT NULL CHECK (correct_answer_index BETWEEN 0 AND 3), -- 0, 1, 2, 3
+    explanation TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ========================================================
+-- 5. สร้างตารางประวัติการใช้งาน, Skill Gap & Skill Passport
+-- ========================================================
+
+CREATE TABLE user_course_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    course_id VARCHAR(50) NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    last_lesson_id UUID REFERENCES course_lessons(id) ON DELETE SET NULL,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('in_progress', 'completed')),
+    progress_percent INT DEFAULT 0 CHECK (progress_percent >= 0 AND progress_percent <= 100),
+    last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP
+);
+
+CREATE TABLE saved_courses (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    course_id VARCHAR(50) NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, course_id)
+);
+
+-- ตารางป้ายรับรองทักษะของผู้ใช้ (Skill Passport Badges)
+CREATE TABLE user_certified_skills (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    skill_name VARCHAR(255) NOT NULL,
+    issuer VARCHAR(255) DEFAULT 'SkillUp Thailand',
+    icon_name VARCHAR(50) DEFAULT 'badge', -- database, bar-chart, sparkles
+    is_verified BOOLEAN DEFAULT TRUE,
+    certified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ตารางวิเคราะห์ช่องว่างทักษะของผู้ใช้
+CREATE TABLE user_skill_gaps (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    skill_id INT NOT NULL REFERENCES skills_tags(id) ON DELETE CASCADE,
+    urgency_score INT CHECK (urgency_score >= 1 AND urgency_score <= 100),
+    is_acquired BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY (user_id, skill_id)
 );
 
 CREATE TABLE user_interactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    course_id VARCHAR(50) NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
     interaction_type VARCHAR(20) NOT NULL CHECK (interaction_type IN ('view', 'like', 'skip', 'share', 'bookmark')),
-    read_seconds INT DEFAULT 0, -- ปรับจาก watch_seconds เป็นเวลาที่ใช้เปิดอ่านบทความ
+    read_seconds INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE user_skill_gaps (
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    skill_id INT NOT NULL REFERENCES skills_tags(id) ON DELETE CASCADE,
-    urgency_score INT CHECK (urgency_score >= 1 AND urgency_score <= 100),
-    PRIMARY KEY (user_id, skill_id)
-);
-
 -- ========================================================
--- 5. สร้างตาราง AI Mentor (แชทบอทแนะนำอาชีพ)
+-- 6. สร้างตาราง AI Mentor Chatbot
 -- ========================================================
 
 CREATE TABLE chat_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    session_type VARCHAR(50) NOT NULL CHECK (session_type IN ('career_advice', 'mock_interview')),
+    session_type VARCHAR(50) NOT NULL DEFAULT 'career_advice',
+    target_role VARCHAR(255),
     title VARCHAR(255),
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
