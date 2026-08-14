@@ -211,9 +211,13 @@
 
     // 3. ยิงไปหา Backend
     try {
+      // แก้ตรงคำสั่ง fetch ในไฟล์ index.html
       const response = await fetch(API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Bypass-Tunnel-Reminder": "true"  // <-- เพิ่มบรรทัดนี้เพื่อทะลุผ่าน LocalTunnel ทันที
+        },
         body: JSON.stringify({ message: message })
       });
       const data = await response.json();
