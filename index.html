@@ -1,289 +1,285 @@
-  <!DOCTYPE html>
-  <html lang="th">
-  <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
-    <title>AI Career Mentor</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            colors: {
-              "surface-container-low": "#f2f4f6",
-              "surface-container": "#eceef0",
-              "surface-container-lowest": "#ffffff",
-              "background": "#f8f9fb",
-              "on-surface": "#191c1e",
-              "on-surface-variant": "#45464e",
-              "primary": "#0d1b3e",
-            },
-            fontFamily: {
-              sans: ["Prompt", "Hanken Grotesk", "sans-serif"],
-            }
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+  <title>AI Career Mentor</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-container-low": "#f2f4f6",
+            "surface-container": "#eceef0",
+            "surface-container-lowest": "#ffffff",
+            "background": "#f8f9fb",
+            "on-surface": "#191c1e",
+            "on-surface-variant": "#45464e",
+            "primary": "#0d1b3e",
+          },
+          fontFamily: {
+            sans: ["Prompt", "Hanken Grotesk", "sans-serif"],
           }
         }
       }
-    </script>
-    <style>
-      body {
-        font-family: 'Prompt', 'Hanken Grotesk', sans-serif;
-      }
-      @keyframes slideInLeft {
-        from { opacity: 0; transform: translateX(-10px) translateY(10px); }
-        to { opacity: 1; transform: translateX(0) translateY(0); }
-      }
-      @keyframes slideInRight {
-        from { opacity: 0; transform: translateX(10px) translateY(10px); }
-        to { opacity: 1; transform: translateX(0) translateY(0); }
-      }
-      
-      /* ซ่อน Scrollbar ทุกแพลตฟอร์ม */
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-      .prose-custom h3 {
-        font-weight: 700;
-        color: #0d1b3e;
-        margin-top: 0.75rem;
-        margin-bottom: 0.25rem;
-        font-size: 0.95rem;
-      }
-      .prose-custom strong {
-        font-weight: 600;
-        color: #0d1b3e;
-      }
-      .prose-custom p {
-        margin-bottom: 0.5rem;
-      }
-      .prose-custom ul {
-        list-style-type: disc;
-        padding-left: 1.25rem;
-        margin-bottom: 0.5rem;
-      }
-      .prose-custom li {
-        margin-bottom: 0.25rem;
-      }
-    </style>
-  </head>
-  <body class="bg-background">
-  <main class="relative w-full max-w-md mx-auto min-h-screen bg-background shadow-2xl flex flex-col">
-    <!-- Top Bar (เอาปุ่ม 3 จุดขวาบนออกแล้ว) -->
-    <div class="flex items-center p-4 bg-surface-container-lowest shadow-sm z-10 sticky top-0">
-      <div class="flex items-center gap-3">
-        <button aria-label="Go back" class="p-2 text-on-surface hover:bg-surface-container rounded-full transition-colors">
-          <span class="material-symbols-outlined text-[24px]">arrow_back</span>
-        </button>
-        <div class="relative">
-          <img alt="AI Mentor Avatar" class="w-10 h-10 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTwR-ld26Szf1gyYX2otWHXDwFHmsE8-f9wu2Ob5lCAhe189W348v2IkFsdtnYAWfHwZ7uvi5hSvhh4aGP0p4Ug17h_lbdhA-yRJhR9oGt8K3vL_AgfzX41QihGRm--5vxfvh2Rg-gpoF7ZJFpvy82iqwifWIhVT56AXr0jbQnf7nXQi7yq2UTXRALyVm-hTDBsyxFJTifULVY26vXSkcm4xxh0Ith76GWLZnscua1uAOLkc01QIWl"/>
-          <div class="absolute bottom-0 right-0 w-3 h-3 bg-[#00C076] rounded-full ring-2 ring-surface-container-lowest"></div>
-        </div>
-        <div class="flex flex-col">
-          <span class="font-bold text-on-surface text-sm">AI Mentor</span>
-          <span class="text-xs text-on-surface-variant flex items-center gap-1">
-            <span class="w-1.5 h-1.5 bg-[#00C076] rounded-full inline-block"></span>
-            Online
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Chat Area -->
-    <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-4 pb-36 scroll-smooth" id="chat-container">
-      <div class="flex justify-center">
-        <span class="text-xs text-on-surface-variant bg-surface-container py-1 px-3 rounded-full font-light">วันนี้</span>
-      </div>
-      
-      <!-- Initial Message -->
-      <div class="flex gap-3 max-w-[85%] self-start animate-[slideInLeft_0.3s_ease-out]">
-        <img alt="AI" class="w-8 h-8 rounded-full flex-shrink-0 mt-1 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTwR-ld26Szf1gyYX2otWHXDwFHmsE8-f9wu2Ob5lCAhe189W348v2IkFsdtnYAWfHwZ7uvi5hSvhh4aGP0p4Ug17h_lbdhA-yRJhR9oGt8K3vL_AgfzX41QihGRm--5vxfvh2Rg-gpoF7ZJFpvy82iqwifWIhVT56AXr0jbQnf7nXQi7yq2UTXRALyVm-hTDBsyxFJTifULVY26vXSkcm4xxh0Ith76GWLZnscua1uAOLkc01QIWl"/>
-        <div class="bg-surface-container-low p-3.5 rounded-2xl rounded-tl-none shadow-sm">
-          <p class="text-sm text-on-surface leading-relaxed">
-            สวัสดีครับ ผมคือ AI Mentor ผู้ช่วยวางแผนเส้นทางอาชีพ IT ของคุณ วันนี้ต้องการปรึกษาเรื่องการเตรียมตัว ทักษะที่ต้องใช้ หรือการสัมภาษณ์งานด้านใดครับ
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Bottom Input Area -->
-    <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-surface-container-lowest p-3 pt-2 pb-4 shadow-[0_-4px_24px_rgba(13,27,62,0.08)] z-20">
-      
-      <!-- Quick Prompts (เลื่อนซ้าย-ขวาได้ ไม่มีแท็บบาร์) -->
-      <div id="quick-prompts-bar" class="flex overflow-x-auto gap-2 pb-2 mb-2 no-scrollbar cursor-grab active:cursor-grabbing select-none" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
-        <button onclick="sendQuickPrompt('ไม่มีประสบการณ์ทำงาน ควรจัดทำพอร์ตโฟลิโออย่างไรให้โดดเด่นและน่าสนใจ')" class="flex-shrink-0 text-xs font-medium text-[#008751] bg-[#f0fdf4] px-3.5 py-2 rounded-full border border-[#00C076] hover:bg-[#00C076] hover:text-white transition-colors whitespace-nowrap shadow-sm">
-          ไม่มีประสบการณ์ทำพอร์ตอย่างไร
-        </button>
-        <button onclick="sendQuickPrompt('ไม่ได้เรียนจบตรงสาย IT ควรเริ่มต้นปูพื้นฐานและเลือกสายงานอย่างไร')" class="flex-shrink-0 text-xs font-medium text-[#008751] bg-[#f0fdf4] px-3.5 py-2 rounded-full border border-[#00C076] hover:bg-[#00C076] hover:text-white transition-colors whitespace-nowrap shadow-sm">
-          ไม่จบตรงสายเริ่มอย่างไร
-        </button>
-        <button onclick="sendQuickPrompt('ขอตัวอย่างคำถามสัมภาษณ์งานตำแหน่ง Junior พร้อมแนวทางการตอบ')" class="flex-shrink-0 text-xs font-medium text-[#008751] bg-[#f0fdf4] px-3.5 py-2 rounded-full border border-[#00C076] hover:bg-[#00C076] hover:text-white transition-colors whitespace-nowrap shadow-sm">
-          คำถามสัมภาษณ์งาน Junior
-        </button>
-        <button onclick="sendQuickPrompt('ทักษะด้านเทคนิคและทักษะเสริมที่ตลาดงาน IT กำลังต้องการมากที่สุด')" class="flex-shrink-0 text-xs font-medium text-[#008751] bg-[#f0fdf4] px-3.5 py-2 rounded-full border border-[#00C076] hover:bg-[#00C076] hover:text-white transition-colors whitespace-nowrap shadow-sm">
-          ทักษะที่ตลาดต้องการสูงสุด
-        </button>
-        <button onclick="sendQuickPrompt('โครงสร้างฐานเงินเดือนเริ่มต้นสำหรับเด็กจบใหม่ในแต่ละสายงาน IT')" class="flex-shrink-0 text-xs font-medium text-[#008751] bg-[#f0fdf4] px-3.5 py-2 rounded-full border border-[#00C076] hover:bg-[#00C076] hover:text-white transition-colors whitespace-nowrap shadow-sm">
-          ฐานเงินเดือนเด็กจบใหม่
-        </button>
-      </div>
-
-      <!-- Input Box -->
-      <div class="flex items-end gap-2 bg-surface-container-low p-1.5 rounded-2xl shadow-inner relative">
-        <button class="p-2 text-on-surface-variant hover:text-[#0D1B3E] transition-colors mb-0.5">
-          <span class="material-symbols-outlined text-[20px]">add_circle</span>
-        </button>
-        <textarea id="user-input" class="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 resize-none text-sm text-on-surface py-2 max-h-[100px] placeholder-on-surface-variant" placeholder="พิมพ์ข้อความที่นี่..." rows="1" onkeydown="handleKeyDown(event)"></textarea>
-        <button id="send-btn" onclick="sendMessage()" class="w-10 h-10 bg-[#0D1B3E] text-white rounded-xl flex items-center justify-center hover:bg-[#0056ff] transition-colors shadow-md flex-shrink-0 mb-0.5 group">
-          <span class="material-symbols-outlined text-[20px] group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" style="font-variation-settings: 'FILL' 1;">send</span>
-        </button>
-      </div>
-    </div>
-  </main>
-
-  <script>
-    const API_URL = "https://bumpy-wolves-mate.loca.lt/api/mentor";
-    const AVATAR_URL = "https://lh3.googleusercontent.com/aida-public/AB6AXuCTwR-ld26Szf1gyYX2otWHXDwFHmsE8-f9wu2Ob5lCAhe189W348v2IkFsdtnYAWfHwZ7uvi5hSvhh4aGP0p4Ug17h_lbdhA-yRJhR9oGt8K3vL_AgfzX41QihGRm--5vxfvh2Rg-gpoF7ZJFpvy82iqwifWIhVT56AXr0jbQnf7nXQi7yq2UTXRALyVm-hTDBsyxFJTifULVY26vXSkcm4xxh0Ith76GWLZnscua1uAOLkc01QIWl";
-
-    const chatContainer = document.getElementById('chat-container');
-    const userInput = document.getElementById('user-input');
-
-    // Drag to Scroll สำหรับแถบคำถามยอดนิยม
-    const slider = document.getElementById('quick-prompts-bar');
-    let isDown = false;
-    let startX;
-    let scrollLeft;
-
-    slider.addEventListener('mousedown', (e) => {
-      isDown = true;
-      startX = e.pageX - slider.offsetLeft;
-      scrollLeft = slider.scrollLeft;
-    });
-    slider.addEventListener('mouseleave', () => { isDown = false; });
-    slider.addEventListener('mouseup', () => { isDown = false; });
-    slider.addEventListener('mousemove', (e) => {
-      if (!isDown) return;
-      e.preventDefault();
-      const x = e.pageX - slider.offsetLeft;
-      const walk = (x - startX) * 1.5;
-      slider.scrollLeft = scrollLeft - walk;
-    });
-
-    function scrollToElement(element) {
-      setTimeout(() => {
-        element.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }, 50);
-    }
-
-    function scrollToBottom() {
-      setTimeout(() => {
-        chatContainer.scrollTo({
-          top: chatContainer.scrollHeight,
-          behavior: 'smooth'
-        });
-      }, 50);
-    }
-
-    function handleKeyDown(event) {
-      if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault();
-        sendMessage();
-      }
-    }
-
-    function sendQuickPrompt(text) {
-      userInput.value = text;
-      sendMessage();
-    }
-
-    async function sendMessage() {
-      const message = userInput.value.trim();
-      if (!message) return;
-
-      // แสดงข้อความ User และเลื่อนจอลงมาหาทันที
-      const userMsgId = "user-msg-" + Date.now();
-      const userBubble = `
-        <div id="${userMsgId}" class="flex gap-3 max-w-[85%] self-end animate-[slideInRight_0.3s_ease-out]">
-          <div class="bg-[#0D1B3E] p-3 rounded-2xl rounded-tr-none shadow-md">
-            <p class="text-sm text-white leading-relaxed font-light">${message}</p>
-          </div>
-        </div>
-      `;
-      chatContainer.insertAdjacentHTML('beforeend', userBubble);
-      userInput.value = '';
-
-      const userElement = document.getElementById(userMsgId);
-      if (userElement) {
-        scrollToElement(userElement);
-      }
-
-      // แสดงสถานะกำลังพิมพ์
-      const typingId = "typing-" + Date.now();
-      const typingBubble = `
-        <div id="${typingId}" class="flex gap-3 max-w-[85%] self-start animate-[slideInLeft_0.3s_ease-out]">
-          <img alt="AI" class="w-8 h-8 rounded-full flex-shrink-0 mt-1 object-cover" src="${AVATAR_URL}"/>
-          <div class="bg-surface-container-low p-4 rounded-2xl rounded-tl-none flex items-center gap-1.5 shadow-sm">
-            <div class="w-2 h-2 bg-on-surface-variant rounded-full animate-bounce"></div>
-            <div class="w-2 h-2 bg-on-surface-variant rounded-full animate-bounce [animation-delay:0.2s]"></div>
-            <div class="w-2 h-2 bg-on-surface-variant rounded-full animate-bounce [animation-delay:0.4s]"></div>
-          </div>
-        </div>
-      `;
-      chatContainer.insertAdjacentHTML('beforeend', typingBubble);
-
-      try {
-        const response = await fetch(API_URL, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Bypass-Tunnel-Reminder": "true"
-          },
-          body: JSON.stringify({ message: message })
-        });
-
-        const data = await response.json();
-        document.getElementById(typingId)?.remove();
-
-        const replyText = data.reply || data.message || "ไม่มีข้อมูลตอบกลับ";
-        const formattedHtml = marked.parse(replyText);
-
-        // แสดงคำตอบ AI และเลื่อนลงมาแสดงผล
-        const aiBubbleId = "ai-msg-" + Date.now();
-        const aiBubble = `
-          <div id="${aiBubbleId}" class="flex gap-3 max-w-[85%] self-start animate-[slideInLeft_0.3s_ease-out]">
-            <img alt="AI" class="w-8 h-8 rounded-full flex-shrink-0 mt-1 object-cover" src="${AVATAR_URL}"/>
-            <div class="bg-surface-container-low p-3.5 rounded-2xl rounded-tl-none shadow-sm flex flex-col gap-1">
-              <div class="text-sm text-on-surface leading-relaxed font-light prose-custom">${formattedHtml}</div>
-            </div>
-          </div>
-        `;
-        chatContainer.insertAdjacentHTML('beforeend', aiBubble);
-        
-        const aiElement = document.getElementById(aiBubbleId);
-        if (aiElement) {
-          scrollToElement(aiElement);
-        }
-      } catch (error) {
-        document.getElementById(typingId)?.remove();
-        const errorBubble = `
-          <div class="flex gap-3 max-w-[85%] self-start">
-            <div class="bg-red-100 border border-red-300 text-red-700 p-3 rounded-2xl text-xs">
-              ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้
-            </div>
-          </div>
-        `;
-        chatContainer.insertAdjacentHTML('beforeend', errorBubble);
-        scrollToBottom();
-      }
     }
   </script>
-  </body>
-  </html>
+  <style>
+    body {
+      font-family: 'Prompt', 'Hanken Grotesk', sans-serif;
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-10px) translateY(10px); }
+      to { opacity: 1; transform: translateX(0) translateY(0); }
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(10px) translateY(10px); }
+      to { opacity: 1; transform: translateX(0) translateY(0); }
+    }
+    
+    /* ซ่อน Scrollbar ทุกแพลตฟอร์ม */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .prose-custom h3 {
+      font-weight: 700;
+      color: #0d1b3e;
+      margin-top: 0.75rem;
+      margin-bottom: 0.25rem;
+      font-size: 0.95rem;
+    }
+    .prose-custom strong {
+      font-weight: 600;
+      color: #0d1b3e;
+    }
+    .prose-custom p {
+      margin-bottom: 0.5rem;
+    }
+    .prose-custom ul {
+      list-style-type: disc;
+      padding-left: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    .prose-custom li {
+      margin-bottom: 0.25rem;
+    }
+  </style>
+</head>
+<body class="bg-background">
+<main class="relative w-full max-w-md mx-auto min-h-screen bg-background shadow-2xl flex flex-col">
+  <!-- Top Bar -->
+  <div class="flex items-center p-4 bg-surface-container-lowest shadow-sm z-10 sticky top-0">
+    <div class="flex items-center gap-3">
+      <button aria-label="Go back" class="p-2 text-on-surface hover:bg-surface-container rounded-full transition-colors">
+        <span class="material-symbols-outlined text-[24px]">arrow_back</span>
+      </button>
+      <div class="relative">
+        <img alt="AI Mentor Avatar" class="w-10 h-10 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTwR-ld26Szf1gyYX2otWHXDwFHmsE8-f9wu2Ob5lCAhe189W348v2IkFsdtnYAWfHwZ7uvi5hSvhh4aGP0p4Ug17h_lbdhA-yRJhR9oGt8K3vL_AgfzX41QihGRm--5vxfvh2Rg-gpoF7ZJFpvy82iqwifWIhVT56AXr0jbQnf7nXQi7yq2UTXRALyVm-hTDBsyxFJTifULVY26vXSkcm4xxh0Ith76GWLZnscua1uAOLkc01QIWl"/>
+        <div class="absolute bottom-0 right-0 w-3 h-3 bg-[#00C076] rounded-full ring-2 ring-surface-container-lowest"></div>
+      </div>
+      <div class="flex flex-col">
+        <span class="font-bold text-on-surface text-sm">AI Mentor</span>
+        <span class="text-xs text-on-surface-variant flex items-center gap-1">
+          <span class="w-1.5 h-1.5 bg-[#00C076] rounded-full inline-block"></span>
+          Online
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Area -->
+  <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-4 pb-36 scroll-smooth" id="chat-container">
+    <div class="flex justify-center">
+      <span class="text-xs text-on-surface-variant bg-surface-container py-1 px-3 rounded-full font-light">วันนี้</span>
+    </div>
+    
+    <!-- Initial Message -->
+    <div class="flex gap-3 max-w-[85%] self-start animate-[slideInLeft_0.3s_ease-out]">
+      <img alt="AI" class="w-8 h-8 rounded-full flex-shrink-0 mt-1 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTwR-ld26Szf1gyYX2otWHXDwFHmsE8-f9wu2Ob5lCAhe189W348v2IkFsdtnYAWfHwZ7uvi5hSvhh4aGP0p4Ug17h_lbdhA-yRJhR9oGt8K3vL_AgfzX41QihGRm--5vxfvh2Rg-gpoF7ZJFpvy82iqwifWIhVT56AXr0jbQnf7nXQi7yq2UTXRALyVm-hTDBsyxFJTifULVY26vXSkcm4xxh0Ith76GWLZnscua1uAOLkc01QIWl"/>
+      <div class="bg-surface-container-low p-3.5 rounded-2xl rounded-tl-none shadow-sm">
+        <p class="text-sm text-on-surface leading-relaxed">
+          สวัสดีครับ ผมคือ AI Mentor ผู้ช่วยวางแผนเส้นทางอาชีพ IT ของคุณ วันนี้ต้องการปรึกษาเรื่องการเตรียมตัว ทักษะที่ต้องใช้ หรือการสัมภาษณ์งานด้านใดครับ
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Input Area -->
+  <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-surface-container-lowest p-3 pt-2 pb-4 shadow-[0_-4px_24px_rgba(13,27,62,0.08)] z-20">
+    
+    <!-- Quick Prompts -->
+    <div id="quick-prompts-bar" class="flex overflow-x-auto gap-2 pb-2 mb-2 no-scrollbar cursor-grab active:cursor-grabbing select-none" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
+      <button onclick="sendQuickPrompt('ไม่มีประสบการณ์ทำงาน ควรจัดทำพอร์ตโฟลิโออย่างไรให้โดดเด่นและน่าสนใจ')" class="flex-shrink-0 text-xs font-medium text-[#008751] bg-[#f0fdf4] px-3.5 py-2 rounded-full border border-[#00C076] hover:bg-[#00C076] hover:text-white transition-colors whitespace-nowrap shadow-sm">
+        ไม่มีประสบการณ์ทำพอร์ตอย่างไร
+      </button>
+      <button onclick="sendQuickPrompt('ไม่ได้เรียนจบตรงสาย IT ควรเริ่มต้นปูพื้นฐานและเลือกสายงานอย่างไร')" class="flex-shrink-0 text-xs font-medium text-[#008751] bg-[#f0fdf4] px-3.5 py-2 rounded-full border border-[#00C076] hover:bg-[#00C076] hover:text-white transition-colors whitespace-nowrap shadow-sm">
+        ไม่จบตรงสายเริ่มอย่างไร
+      </button>
+      <button onclick="sendQuickPrompt('ขอตัวอย่างคำถามสัมภาษณ์งานตำแหน่ง Junior พร้อมแนวทางการตอบ')" class="flex-shrink-0 text-xs font-medium text-[#008751] bg-[#f0fdf4] px-3.5 py-2 rounded-full border border-[#00C076] hover:bg-[#00C076] hover:text-white transition-colors whitespace-nowrap shadow-sm">
+        คำถามสัมภาษณ์งาน Junior
+      </button>
+      <button onclick="sendQuickPrompt('ทักษะด้านเทคนิคและทักษะเสริมที่ตลาดงาน IT กำลังต้องการมากที่สุด')" class="flex-shrink-0 text-xs font-medium text-[#008751] bg-[#f0fdf4] px-3.5 py-2 rounded-full border border-[#00C076] hover:bg-[#00C076] hover:text-white transition-colors whitespace-nowrap shadow-sm">
+        ทักษะที่ตลาดต้องการสูงสุด
+      </button>
+      <button onclick="sendQuickPrompt('โครงสร้างฐานเงินเดือนเริ่มต้นสำหรับเด็กจบใหม่ในแต่ละสายงาน IT')" class="flex-shrink-0 text-xs font-medium text-[#008751] bg-[#f0fdf4] px-3.5 py-2 rounded-full border border-[#00C076] hover:bg-[#00C076] hover:text-white transition-colors whitespace-nowrap shadow-sm">
+        ฐานเงินเดือนเด็กจบใหม่
+      </button>
+    </div>
+
+    <!-- Input Box -->
+    <div class="flex items-end gap-2 bg-surface-container-low p-1.5 rounded-2xl shadow-inner relative">
+      <button class="p-2 text-on-surface-variant hover:text-[#0D1B3E] transition-colors mb-0.5">
+        <span class="material-symbols-outlined text-[20px]">add_circle</span>
+      </button>
+      <textarea id="user-input" class="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 resize-none text-sm text-on-surface py-2 max-h-[100px] placeholder-on-surface-variant" placeholder="พิมพ์ข้อความที่นี่..." rows="1" onkeydown="handleKeyDown(event)"></textarea>
+      <button id="send-btn" onclick="sendMessage()" class="w-10 h-10 bg-[#0D1B3E] text-white rounded-xl flex items-center justify-center hover:bg-[#0056ff] transition-colors shadow-md flex-shrink-0 mb-0.5 group">
+        <span class="material-symbols-outlined text-[20px] group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" style="font-variation-settings: 'FILL' 1;">send</span>
+      </button>
+    </div>
+  </div>
+</main>
+
+<script>
+  const API_URL = "https://bumpy-wolves-mate.loca.lt/api/mentor";
+  const AVATAR_URL = "https://lh3.googleusercontent.com/aida-public/AB6AXuCTwR-ld26Szf1gyYX2otWHXDwFHmsE8-f9wu2Ob5lCAhe189W348v2IkFsdtnYAWfHwZ7uvi5hSvhh4aGP0p4Ug17h_lbdhA-yRJhR9oGt8K3vL_AgfzX41QihGRm--5vxfvh2Rg-gpoF7ZJFpvy82iqwifWIhVT56AXr0jbQnf7nXQi7yq2UTXRALyVm-hTDBsyxFJTifULVY26vXSkcm4xxh0Ith76GWLZnscua1uAOLkc01QIWl";
+
+  const chatContainer = document.getElementById('chat-container');
+  const userInput = document.getElementById('user-input');
+
+  const slider = document.getElementById('quick-prompts-bar');
+  let isDown = false;
+  let startX;
+  let scrollLeft;
+
+  slider.addEventListener('mousedown', (e) => {
+    isDown = true;
+    startX = e.pageX - slider.offsetLeft;
+    scrollLeft = slider.scrollLeft;
+  });
+  slider.addEventListener('mouseleave', () => { isDown = false; });
+  slider.addEventListener('mouseup', () => { isDown = false; });
+  slider.addEventListener('mousemove', (e) => {
+    if (!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - slider.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    slider.scrollLeft = scrollLeft - walk;
+  });
+
+  function scrollToElement(element) {
+    setTimeout(() => {
+      element.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 50);
+  }
+
+  function scrollToBottom() {
+    setTimeout(() => {
+      chatContainer.scrollTo({
+        top: chatContainer.scrollHeight,
+        behavior: 'smooth'
+      });
+    }, 50);
+  }
+
+  function handleKeyDown(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function sendQuickPrompt(text) {
+    userInput.value = text;
+    sendMessage();
+  }
+
+  async function sendMessage() {
+    const message = userInput.value.trim();
+    if (!message) return;
+
+    const userMsgId = "user-msg-" + Date.now();
+    const userBubble = `
+      <div id="${userMsgId}" class="flex gap-3 max-w-[85%] self-end animate-[slideInRight_0.3s_ease-out]">
+        <div class="bg-[#0D1B3E] p-3 rounded-2xl rounded-tr-none shadow-md">
+          <p class="text-sm text-white leading-relaxed font-light">${message}</p>
+        </div>
+      </div>
+    `;
+    chatContainer.insertAdjacentHTML('beforeend', userBubble);
+    userInput.value = '';
+
+    const userElement = document.getElementById(userMsgId);
+    if (userElement) {
+      scrollToElement(userElement);
+    }
+
+    const typingId = "typing-" + Date.now();
+    const typingBubble = `
+      <div id="${typingId}" class="flex gap-3 max-w-[85%] self-start animate-[slideInLeft_0.3s_ease-out]">
+        <img alt="AI" class="w-8 h-8 rounded-full flex-shrink-0 mt-1 object-cover" src="${AVATAR_URL}"/>
+        <div class="bg-surface-container-low p-4 rounded-2xl rounded-tl-none flex items-center gap-1.5 shadow-sm">
+          <div class="w-2 h-2 bg-on-surface-variant rounded-full animate-bounce"></div>
+          <div class="w-2 h-2 bg-on-surface-variant rounded-full animate-bounce [animation-delay:0.2s]"></div>
+          <div class="w-2 h-2 bg-on-surface-variant rounded-full animate-bounce [animation-delay:0.4s]"></div>
+        </div>
+      </div>
+    `;
+    chatContainer.insertAdjacentHTML('beforeend', typingBubble);
+
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Bypass-Tunnel-Reminder": "true"
+        },
+        body: JSON.stringify({ message: message })
+      });
+
+      const data = await response.json();
+      document.getElementById(typingId)?.remove();
+
+      const replyText = data.reply || data.message || "ไม่มีข้อมูลตอบกลับ";
+      const formattedHtml = marked.parse(replyText);
+
+      const aiBubbleId = "ai-msg-" + Date.now();
+      const aiBubble = `
+        <div id="${aiBubbleId}" class="flex gap-3 max-w-[85%] self-start animate-[slideInLeft_0.3s_ease-out]">
+          <img alt="AI" class="w-8 h-8 rounded-full flex-shrink-0 mt-1 object-cover" src="${AVATAR_URL}"/>
+          <div class="bg-surface-container-low p-3.5 rounded-2xl rounded-tl-none shadow-sm flex flex-col gap-1">
+            <div class="text-sm text-on-surface leading-relaxed font-light prose-custom">${formattedHtml}</div>
+          </div>
+        </div>
+      `;
+      chatContainer.insertAdjacentHTML('beforeend', aiBubble);
+      
+      const aiElement = document.getElementById(aiBubbleId);
+      if (aiElement) {
+        scrollToElement(aiElement);
+      }
+    } catch (error) {
+      document.getElementById(typingId)?.remove();
+      const errorBubble = `
+        <div class="flex gap-3 max-w-[85%] self-start">
+          <div class="bg-red-100 border border-red-300 text-red-700 p-3 rounded-2xl text-xs">
+            ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้
+          </div>
+        </div>
+      `;
+      chatContainer.insertAdjacentHTML('beforeend', errorBubble);
+      scrollToBottom();
+    }
+  }
+</script>
+</body>
+</html>
