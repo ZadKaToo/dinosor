@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -58,8 +57,201 @@ class GoogleFonts {
   }
 }
 
-// Global Key for Confetti
-final GlobalKey<_MainLayoutScreenState> mainScreenKey = GlobalKey();
+// ==========================================
+// SHARED CONSTANTS / DATA
+// ==========================================
+const String kMentorApiUrl = "https://open-garlics-poke.loca.lt/api/mentor";
+
+class SalaryTier {
+  final int xp;
+  final int salary;
+  final String role;
+  const SalaryTier(this.xp, this.salary, this.role);
+}
+
+const List<SalaryTier> kSalaryTiers = [
+  SalaryTier(0, 20000, "Junior IT Specialist (Entry)"),
+  SalaryTier(40, 25000, "Junior IT / Developer"),
+  SalaryTier(100, 35000, "Junior IT Specialist (Advanced)"),
+  SalaryTier(180, 45000, "Mid-Level IT Specialist"),
+  SalaryTier(300, 65000, "Mid-Level Engineer / Analyst"),
+  SalaryTier(400, 90000, "Senior IT Specialist"),
+  SalaryTier(500, 130000, "Senior Solution Architect"),
+  SalaryTier(700, 180000, "Tech Lead / CTO"),
+];
+
+class BadgeDef {
+  final String id;
+  final String emoji;
+  final String name;
+  final String desc;
+  const BadgeDef(this.id, this.emoji, this.name, this.desc);
+}
+
+const List<BadgeDef> kBadges = [
+  BadgeDef('first_run', '▶️', 'First Run', 'รันโค้ดครั้งแรก'),
+  BadgeDef('first_pass', '✅', 'Test Passer', 'ผ่าน Test แรก'),
+  BadgeDef('streak3', '🔥', 'On Fire!', '3 วันติดต่อกัน'),
+  BadgeDef('xp50', '⭐', 'Rising Star', 'สะสม 50 XP'),
+  BadgeDef('xp100', '💯', 'Century Club', 'สะสม 100 XP'),
+  BadgeDef('mission1', '🎯', 'Mission Pro', 'ผ่าน Mission 1'),
+  BadgeDef('coder', '👨‍💻', 'IT Practitioner', 'ใช้งาน Sandbox 10 ครั้ง'),
+  BadgeDef('xp200', '🚀', 'Rocket Dev', 'สะสม 200 XP'),
+];
+
+String formatMoney(int n) {
+  final s = n.toString();
+  final buf = StringBuffer();
+  for (int i = 0; i < s.length; i++) {
+    if (i != 0 && (s.length - i) % 3 == 0) buf.write(',');
+    buf.write(s[i]);
+  }
+  return buf.toString();
+}
+
+// --------------------------------------------------
+// TOAST NOTIFICATION (real functional replacement of JS showToast)
+// --------------------------------------------------
+enum ToastType { success, error, info, badge }
+
+void showAppToast(BuildContext context, String message, {ToastType type = ToastType.success}) {
+  IconData icon;
+  Color iconColor;
+  switch (type) {
+    case ToastType.success:
+      icon = Icons.check_circle;
+      iconColor = const Color(0xFF34D399);
+      break;
+    case ToastType.error:
+      icon = Icons.cancel;
+      iconColor = const Color(0xFFF87171);
+      break;
+    case ToastType.info:
+      icon = Icons.lightbulb;
+      iconColor = const Color(0xFFFBBF24);
+      break;
+    case ToastType.badge:
+      icon = Icons.military_tech;
+      iconColor = const Color(0xFFC084FC);
+      break;
+  }
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  if (messenger == null) return;
+  messenger.hideCurrentSnackBar();
+  messenger.showSnackBar(
+    SnackBar(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: const Color(0xFF0F172A),
+      duration: const Duration(seconds: 3),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: Color(0xFF334155)),
+      ),
+      content: Row(
+        children: [
+          Icon(icon, color: iconColor, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(message, style: GoogleFonts.prompt(color: Colors.white, fontSize: 13)),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+// --------------------------------------------------
+// SALARY UNLOCK OVERLAY (real functional replacement of #salary-overlay)
+// --------------------------------------------------
+void showSalaryUnlockDialog(BuildContext context, String missionName, int xpGained) {
+  final state = context.read<AppState>();
+  showDialog(
+    context: context,
+    barrierColor: Colors.black87,
+    builder: (ctx) => Dialog(
+      backgroundColor: const Color(0xFF0F172A),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: const BorderSide(color: Color(0xFF1E293B)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('🎉', style: TextStyle(fontSize: 48)),
+            const SizedBox(height: 8),
+            Text('MISSION COMPLETE!',
+                style: GoogleFonts.prompt(
+                    color: const Color(0xFF34D399), fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+            const SizedBox(height: 4),
+            Text(missionName,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.prompt(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFF065F46)),
+              ),
+              child: Column(
+                children: [
+                  Text('เป้าหมายเงินเดือนที่ Unlock ได้',
+                      style: GoogleFonts.prompt(color: const Color(0xFF64748B), fontSize: 11)),
+                  const SizedBox(height: 6),
+                  Text('฿${formatMoney(state.currentSalary)}',
+                      style: GoogleFonts.prompt(
+                          color: const Color(0xFF34D399), fontSize: 30, fontWeight: FontWeight.bold)),
+                  Text('/เดือน · ${state.currentRole}',
+                      style: GoogleFonts.prompt(color: const Color(0xFF94A3B8), fontSize: 12)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _rewardPill('XP ได้รับ', '+$xpGained XP', const Color(0xFF1E3A8A), const Color(0xFF93C5FD)),
+                const SizedBox(width: 12),
+                _rewardPill('Streak', '${state.streakDays} วัน 🔥', const Color(0xFF78350F), const Color(0xFFFCD34D)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF10B981),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text('ต่อไป Mission ถัดไป →',
+                    style: GoogleFonts.prompt(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _rewardPill(String label, String value, Color bg, Color fg) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+    decoration: BoxDecoration(color: bg.withOpacity(0.6), borderRadius: BorderRadius.circular(10)),
+    child: Column(
+      children: [
+        Text(label, style: GoogleFonts.prompt(color: fg, fontSize: 10, fontWeight: FontWeight.bold)),
+        Text(value, style: GoogleFonts.prompt(color: fg, fontSize: 13, fontWeight: FontWeight.bold)),
+      ],
+    ),
+  );
+}
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -80,45 +272,45 @@ class AppState extends ChangeNotifier {
   int missionsDone = 0;
   int runCount = 0;
   String selectedTrack = 'swe';
-  int currentIndex = 0; // Manage tabs globally
-
-  // IDE State
-  Map<String, String> files = {
-    'main.py': "name = input('Enter your name: ')\nprint(f'Hello, {name}!')"
-  };
-  String activeFile = 'main.py';
-  bool showAIHint = false;
-  bool test1Passed = false;
-  bool test2Passed = false;
-  bool mission1Submitted = false;
 
   final Set<String> earnedBadges = {};
+  final List<BadgeDef> pendingBadgeToasts = [];
 
-  int get currentSalary {
-    if (totalXP >= 700) return 180000;
-    if (totalXP >= 500) return 130000;
-    if (totalXP >= 400) return 90000;
-    if (totalXP >= 300) return 65000;
-    if (totalXP >= 180) return 45000;
-    if (totalXP >= 100) return 35000;
-    if (totalXP >= 40) return 25000;
-    return 20000;
+  int get multiplier => streakDays >= 7 ? 3 : (streakDays >= 3 ? 2 : 1);
+
+  SalaryTier get _tier {
+    SalaryTier t = kSalaryTiers.first;
+    for (final s in kSalaryTiers) {
+      if (totalXP >= s.xp) {
+        t = s;
+      } else {
+        break;
+      }
+    }
+    return t;
   }
 
-  String get currentRole {
-    if (totalXP >= 700) return "Tech Lead / CTO";
-    if (totalXP >= 500) return "Senior Solution Architect";
-    if (totalXP >= 400) return "Senior IT Specialist";
-    if (totalXP >= 300) return "Mid-Level Engineer / Analyst";
-    if (totalXP >= 180) return "Mid-Level IT Specialist";
-    if (totalXP >= 100) return "Junior IT Specialist (Advanced)";
-    if (totalXP >= 40) return "Junior IT / Developer";
-    return "Junior IT Specialist (Entry)";
-  }
+  int get currentSalary => _tier.salary;
+  String get currentRole => _tier.role;
+  int get level => (totalXP ~/ 100) + 1;
+  int get xpIntoLevel => totalXP % 100;
 
-  void switchTab(int index) {
-    currentIndex = index;
+  void addXP(int amount) {
+    final gained = amount * multiplier;
+    totalXP += gained;
+    _checkBadges();
     notifyListeners();
+  }
+
+  void incrementRunCount() {
+    runCount++;
+    _checkBadges();
+    notifyListeners();
+  }
+
+  void completeMission(int xp) {
+    missionsDone++;
+    addXP(xp);
   }
 
   void selectTrack(String track) {
@@ -126,73 +318,40 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleHint() {
-    showAIHint = !showAIHint;
-    notifyListeners();
-  }
-
-  void addFile(String filename) {
-    if (!files.containsKey(filename)) {
-      files[filename] = "";
-      activeFile = filename;
-      notifyListeners();
+  List<BadgeDef> _checkBadges() {
+    final newlyEarned = <BadgeDef>[];
+    void mark(String id) {
+      if (!earnedBadges.contains(id)) {
+        earnedBadges.add(id);
+        final def = kBadges.firstWhere((b) => b.id == id);
+        newlyEarned.add(def);
+      }
     }
+
+    if (runCount >= 1) mark('first_run');
+    if (runCount >= 10) mark('coder');
+    if (totalXP >= 40) mark('first_pass');
+    if (totalXP >= 50) mark('xp50');
+    if (totalXP >= 100) mark('xp100');
+    if (totalXP >= 200) mark('xp200');
+    if (missionsDone >= 1) mark('mission1');
+    if (streakDays >= 3) mark('streak3');
+    return newlyEarned;
   }
 
-  void switchFile(String filename) {
-    activeFile = filename;
-    notifyListeners();
-  }
-
-  void updateActiveFile(String content) {
-    files[activeFile] = content;
-  }
-
-  void updateTests(bool t1, bool t2) {
-    test1Passed = t1;
-    test2Passed = t2;
-    notifyListeners();
-  }
-
-  void addXP(int amount) {
-    int multiplier = streakDays >= 7 ? 3 : (streakDays >= 3 ? 2 : 1);
-    totalXP += amount * multiplier;
-    checkBadges();
-    notifyListeners();
-  }
-
-  void incrementRunCount() {
-    runCount++;
-    if (runCount >= 1) earnedBadges.add('first_run');
-    if (runCount >= 10) earnedBadges.add('coder');
-    notifyListeners();
-  }
-
-  void completeMission(int xp) {
-    if (!mission1Submitted) {
-      mission1Submitted = true;
-      missionsDone++;
-      if (missionsDone >= 1) earnedBadges.add('mission1');
-      addXP(xp);
-      mainScreenKey.currentState?.playConfetti();
-    }
-  }
-
-  void checkBadges() {
-    if (totalXP >= 40) earnedBadges.add('first_pass');
-    if (totalXP >= 50) earnedBadges.add('xp50');
-    if (totalXP >= 100) earnedBadges.add('xp100');
-    if (totalXP >= 200) earnedBadges.add('xp200');
+  /// Returns newly-earned badges so the UI can toast them, then commits state.
+  List<BadgeDef> checkBadgesAndReturnNew() {
+    final n = _checkBadges();
+    if (n.isNotEmpty) notifyListeners();
+    return n;
   }
 
   void resetProgress() {
     totalXP = 20;
     missionsDone = 0;
     runCount = 0;
-    mission1Submitted = false;
-    test1Passed = false;
-    test2Passed = false;
     earnedBadges.clear();
+    selectedTrack = 'swe';
     notifyListeners();
   }
 }
@@ -218,7 +377,7 @@ class LearnProApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF080C14),
         primaryColor: const Color(0xFF10B981),
       ),
-      home: MainLayoutScreen(key: mainScreenKey),
+      home: const MainLayoutScreen(),
     );
   }
 }
@@ -231,10 +390,11 @@ class MainLayoutScreen extends StatefulWidget {
 }
 
 class _MainLayoutScreenState extends State<MainLayoutScreen> {
+  int _currentIndex = 0;
   late ConfettiController _confettiController;
 
   final List<Widget> _tabs = [
-    const ITCenterDashboardScreen(),
+    ITCenterDashboardScreen(onNavigate: (i) {}),
     const AIMentorChatScreen(),
     const ITTracksScreen(),
     const CareerRoadmapScreen(),
@@ -253,40 +413,59 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     super.dispose();
   }
 
-  void playConfetti() {
-    _confettiController.play();
+  void _goTo(int i) => setState(() => _currentIndex = i);
+
+  void _confirmReset(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        title: Text('รีเซ็ตความคืบหน้า?', style: GoogleFonts.prompt(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Text('ล้างความคืบหน้าทั้งหมดเพื่อเริ่มใหม่หรือไม่?',
+            style: GoogleFonts.prompt(color: const Color(0xFF94A3B8), fontSize: 13)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('ยกเลิก', style: GoogleFonts.prompt(color: const Color(0xFF94A3B8))),
+          ),
+          TextButton(
+            onPressed: () {
+              context.read<AppState>().resetProgress();
+              Navigator.of(ctx).pop();
+              showAppToast(context, 'รีเซ็ตความคืบหน้าเรียบร้อยแล้ว', type: ToastType.info);
+            },
+            child: Text('รีเซ็ต', style: GoogleFonts.prompt(color: const Color(0xFFF87171), fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = Provider.of<AppState>(context);
+    final state = context.watch<AppState>();
     bool isWide = MediaQuery.of(context).size.width >= 800;
 
+    final tabs = [
+      ITCenterDashboardScreen(onNavigate: _goTo),
+      const AIMentorChatScreen(),
+      const ITTracksScreen(),
+      const CareerRoadmapScreen(),
+      const LiveSandboxScreen(),
+    ];
+
     return Scaffold(
-      body: Stack(
+      body: Row(
         children: [
-          Row(
-            children: [
-              if (isWide) _buildDesktopSidebar(context, state),
-              Expanded(child: _tabs[state.currentIndex]),
-            ],
-          ),
-          Align(
-            alignment: Alignment.topCenter,
-            child: ConfettiWidget(
-              confettiController: _confettiController,
-              blastDirectionality: BlastDirectionality.explosive,
-              shouldLoop: false,
-              colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple],
-            ),
-          ),
+          if (isWide) _buildDesktopSidebar(context, state),
+          Expanded(child: tabs[_currentIndex]),
         ],
       ),
       bottomNavigationBar: isWide
           ? null
           : BottomNavigationBar(
-        currentIndex: state.currentIndex,
-        onTap: (index) => state.switchTab(index),
+        currentIndex: _currentIndex,
+        onTap: _goTo,
         backgroundColor: const Color(0xFF0A0F1A),
         selectedItemColor: const Color(0xFF10B981),
         unselectedItemColor: const Color(0xFF64748B),
@@ -306,119 +485,187 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
 
   Widget _buildDesktopSidebar(BuildContext context, AppState state) {
     return Container(
-      width: 250,
+      width: 264,
       color: const Color(0xFF0A0F1A),
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade800,
-                      borderRadius: BorderRadius.circular(10),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade800,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.laptop, color: Colors.white, size: 20),
                     ),
-                    child: const Icon(Icons.laptop, color: Colors.white, size: 20),
+                    const SizedBox(width: 10),
+                    RichText(
+                      text: TextSpan(
+                        style: GoogleFonts.prompt(fontWeight: FontWeight.bold, fontSize: 18),
+                        children: const [
+                          TextSpan(text: 'Learn', style: TextStyle(color: Colors.white)),
+                          TextSpan(text: 'Pro', style: TextStyle(color: Color(0xFF10B981))),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade900.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.shade700, width: 0.5),
                   ),
-                  const SizedBox(width: 10),
-                  RichText(
-                    text: TextSpan(
-                      style: GoogleFonts.prompt(fontWeight: FontWeight.bold, fontSize: 18),
-                      children: const [
-                        TextSpan(text: 'Learn', style: TextStyle(color: Colors.white)),
-                        TextSpan(text: 'Pro', style: TextStyle(color: Color(0xFF10B981))),
-                      ],
+                  child: Row(
+                    children: [
+                      const Icon(Icons.local_fire_department, color: Colors.orange, size: 14),
+                      Text(
+                        ' ${state.streakDays} วัน',
+                        style: GoogleFonts.prompt(color: Colors.orangeAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                )
+              ],
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF064E3B), Color(0xFF047857)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('💰 เงินเดือนเป้าหมาย IT',
+                      style: GoogleFonts.prompt(color: const Color(0xFF34D399), fontSize: 10, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(
+                    '฿${formatMoney(state.currentSalary)}/เดือน',
+                    style: GoogleFonts.prompt(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Text(state.currentRole, style: GoogleFonts.prompt(color: const Color(0xFFA7F3D0), fontSize: 10)),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: (state.currentSalary / 180000).clamp(0.0, 1.0),
+                      minHeight: 6,
+                      backgroundColor: Colors.black26,
+                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF34D399)),
                     ),
                   ),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade900.withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.shade700, width: 0.5),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.local_fire_department, color: Colors.orange, size: 14),
-                    Text(
-                      ' ${state.streakDays} วัน',
-                      style: GoogleFonts.prompt(color: Colors.orangeAccent, fontSize: 11, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              )
-            ],
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF064E3B), Color(0xFF047857)],
+            ),
+            const SizedBox(height: 20),
+            _buildNavButton(context, 0, Icons.home_rounded, 'หน้าหลัก IT Center'),
+            _buildNavButton(context, 1, Icons.smart_toy_rounded, 'AI Mentor Chat'),
+            _buildNavButton(context, 2, Icons.alt_route_rounded, 'IT Tracks & Fields'),
+            _buildNavButton(context, 3, Icons.show_chart_rounded, 'Career Roadmap'),
+            _buildNavButton(context, 4, Icons.terminal_rounded, 'Live Sandbox'),
+            const SizedBox(height: 16),
+            Text('ACHIEVEMENTS',
+                style: GoogleFonts.prompt(color: const Color(0xFF475569), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+            const SizedBox(height: 8),
+            _buildBadgeShelf(state),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F172A),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF1E293B)),
               ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('💰 เงินเดือนเป้าหมาย IT', style: GoogleFonts.prompt(color: const Color(0xFF34D399), fontSize: 10, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text(
-                  '฿${state.currentSalary.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}/เดือน',
-                  style: GoogleFonts.prompt(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                Text(state.currentRole, style: GoogleFonts.prompt(color: const Color(0xFFA7F3D0), fontSize: 10)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          _buildNavButton(state, 0, Icons.home_rounded, 'หน้าหลัก IT Center'),
-          _buildNavButton(state, 1, Icons.smart_toy_rounded, 'AI Mentor Chat'),
-          _buildNavButton(state, 2, Icons.alt_route_rounded, 'IT Tracks & Fields'),
-          _buildNavButton(state, 3, Icons.show_chart_rounded, 'Career Roadmap'),
-          _buildNavButton(state, 4, Icons.terminal_rounded, 'Live Sandbox'),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF1E293B)),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Level ${(state.totalXP ~/ 100) + 1}', style: GoogleFonts.prompt(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                    Text('${state.totalXP} XP', style: GoogleFonts.prompt(color: Colors.lightBlueAccent, fontSize: 11)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                LinearProgressIndicator(
-                  value: (state.totalXP % 100) / 100.0,
-                  backgroundColor: Colors.black26,
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
-                ),
-              ],
-            ),
-          )
-        ],
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Level ${state.level}',
+                          style: GoogleFonts.prompt(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                      Text('${state.totalXP} XP', style: GoogleFonts.prompt(color: Colors.lightBlueAccent, fontSize: 11)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: state.xpIntoLevel / 100.0,
+                      minHeight: 8,
+                      backgroundColor: Colors.black26,
+                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      InkWell(
+                        onTap: () => _confirmReset(context),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.restart_alt, color: Color(0xFF64748B), size: 14),
+                            const SizedBox(width: 4),
+                            Text('รีเซ็ต', style: GoogleFonts.prompt(color: const Color(0xFF64748B), fontSize: 10)),
+                          ],
+                        ),
+                      ),
+                      Text('${state.missionsDone}/3 Missions',
+                          style: GoogleFonts.prompt(color: const Color(0xFF475569), fontSize: 10)),
+                    ],
+                  ),
+                ],
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildNavButton(AppState state, int index, IconData icon, String label) {
-    bool isActive = state.currentIndex == index;
+  Widget _buildBadgeShelf(AppState state) {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: kBadges.map((b) {
+        final earned = state.earnedBadges.contains(b.id);
+        return Tooltip(
+          message: earned ? '${b.name}: ${b.desc}' : '🔒 ยังไม่ได้รับ',
+          child: Container(
+            width: 30,
+            height: 30,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: earned ? const Color(0xFF1E293B) : const Color(0xFF0F172A),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: earned ? const Color(0xFF334155) : const Color(0xFF1E293B)),
+            ),
+            child: Opacity(
+              opacity: earned ? 1 : 0.25,
+              child: Text(b.emoji, style: const TextStyle(fontSize: 15)),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildNavButton(BuildContext context, int index, IconData icon, String label) {
+    bool isActive = _currentIndex == index;
     return InkWell(
-      onTap: () => state.switchTab(index),
+      onTap: () => _goTo(index),
       borderRadius: BorderRadius.circular(10),
       child: Container(
         margin: const EdgeInsets.only(bottom: 4),
@@ -447,14 +694,60 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
 }
 
 // ==========================================
-// TAB 1: IT CENTER DASHBOARD
+// DAILY COUNTDOWN (real ticking timer, replaces JS setInterval countdown)
 // ==========================================
-class ITCenterDashboardScreen extends StatelessWidget {
-  const ITCenterDashboardScreen({super.key});
+class DailyCountdown extends StatefulWidget {
+  const DailyCountdown({super.key});
+
+  @override
+  State<DailyCountdown> createState() => _DailyCountdownState();
+}
+
+class _DailyCountdownState extends State<DailyCountdown> {
+  late Timer _timer;
+  Duration _remaining = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _update();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _update());
+  }
+
+  void _update() {
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    if (mounted) setState(() => _remaining = tomorrow.difference(now));
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  String _pad(int n) => n.toString().padLeft(2, '0');
 
   @override
   Widget build(BuildContext context) {
-    final state = Provider.of<AppState>(context);
+    final h = _pad(_remaining.inHours);
+    final m = _pad(_remaining.inMinutes % 60);
+    final s = _pad(_remaining.inSeconds % 60);
+    return Text('⏰ รีเซ็ตใน: $h:$m:$s',
+        style: GoogleFonts.jetBrainsMono(color: const Color(0xFFFCD34D), fontSize: 11, fontWeight: FontWeight.bold));
+  }
+}
+
+// ==========================================
+// TAB 1: IT CENTER DASHBOARD
+// ==========================================
+class ITCenterDashboardScreen extends StatelessWidget {
+  final void Function(int) onNavigate;
+  const ITCenterDashboardScreen({super.key, required this.onNavigate});
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -462,7 +755,6 @@ class ITCenterDashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Hero Banner
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -476,7 +768,8 @@ class ITCenterDashboardScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('🚀 เส้นทางเติบโตในสายงาน IT', style: GoogleFonts.prompt(color: Colors.blue.shade300, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text('🚀 เส้นทางเติบโตในสายงาน IT',
+                      style: GoogleFonts.prompt(color: Colors.blue.shade300, fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   Text(
                     'ยกระดับทักษะ IT สู่การทำงานจริงในอุตสาหกรรม',
@@ -487,6 +780,18 @@ class ITCenterDashboardScreen extends StatelessWidget {
                     'สายงาน IT มีเงินเดือนเริ่มต้น ฿20,000 - ฿35,000 และเติบโตสู่ Senior/Lead ได้ถึง ฿180,000+ ในไทย',
                     style: GoogleFonts.prompt(color: const Color(0xFF94A3B8), fontSize: 13),
                   ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => onNavigate(1),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10B981),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.smart_toy, color: Colors.white, size: 18),
+                    label: Text('ปรึกษา AI Mentor',
+                        style: GoogleFonts.prompt(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
                 ],
               ),
             ),
@@ -494,164 +799,216 @@ class ITCenterDashboardScreen extends StatelessWidget {
 
             // Daily Challenge
             Container(
-              padding: const EdgeInsets.all(16),
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(colors: [Color(0xFF78350F), Color(0xFF92400E)]),
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.amber.withOpacity(0.4)),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('⚡ DAILY CHALLENGE', style: GoogleFonts.prompt(color: Colors.amber, fontSize: 11, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Text('🎯 "IT Problem Solving & Automation"', style: GoogleFonts.prompt(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                        Text('เขียนโปรแกรมหรือ Script ตรวจสอบระบบอัตโนมัติ', style: GoogleFonts.prompt(color: Colors.amber.shade100, fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      state.switchTab(4); // Jump to IDE
-                    },
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black),
-                    child: Text('รับ +75 XP', style: GoogleFonts.prompt(fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Salary Tiers Overview
-            Text('📊 ประมาณการเงินเดือนสายงาน IT ในไทย', style: GoogleFonts.prompt(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: MediaQuery.of(context).size.width > 600 ? 4 : 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.3,
-              children: [
-                _buildTierCard('Junior IT / Dev', '฿20–35K', '0–2 ปีประสบการณ์', const Color(0xFF10B981), true),
-                _buildTierCard('Mid Specialist', '฿40–80K', '2–5 ปีประสบการณ์', Colors.blue, state.totalXP >= 100),
-                _buildTierCard('Senior Expert', '฿85–150K', '5+ ปีประสบการณ์', Colors.purple, state.totalXP >= 300),
-                _buildTierCard('Tech Lead / CTO', '฿180K+', 'ระดับบริหารเทคโนโลยี', Colors.amber, state.totalXP >= 500),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-            Text('📋 ภารกิจพื้นฐาน (General IT Missions)', style: GoogleFonts.prompt(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            _buildMissionCard(
-              context,
-              state,
-              '01',
-              'Greeting Automation Script',
-              'เขียน Script ตอบรับและแสดงผลการทักทายผู้ใช้งานระบบอัตโนมัติ',
-              '+40 XP',
-              true,
-              state.mission1Submitted,
-            ),
-            _buildMissionCard(
-              context,
-              state,
-              '02',
-              'System Metric Calculator',
-              'สร้างระบบคำนวณและประมวลผลทรัพยากรของเครื่องเซิร์ฟเวอร์',
-              '+60 XP',
-              false,
-              false,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTierCard(String title, String salary, String subtitle, Color color, bool unlocked) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: unlocked ? color.withOpacity(0.5) : const Color(0xFF1E293B)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(title, style: GoogleFonts.prompt(color: const Color(0xFF64748B), fontSize: 11)),
-              if (!unlocked) const Icon(Icons.lock, size: 12, color: Colors.grey),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(salary, style: GoogleFonts.prompt(color: unlocked ? color : Colors.grey, fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 2),
-          Text(subtitle, style: GoogleFonts.prompt(color: const Color(0xFF475569), fontSize: 10)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMissionCard(BuildContext context, AppState state, String num, String title, String desc, String xp, bool isUnlocked, bool isDone) {
-    return InkWell(
-      onTap: isUnlocked ? () => state.switchTab(4) : null,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF0F172A),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isDone ? Colors.green : (isUnlocked ? Colors.blue.withOpacity(0.5) : const Color(0xFF1E293B))),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: isUnlocked ? Colors.blue.withOpacity(0.2) : Colors.grey.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(num, style: GoogleFonts.prompt(color: isUnlocked ? Colors.blue : Colors.grey, fontWeight: FontWeight.bold)),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Text(title, style: GoogleFonts.prompt(color: isUnlocked ? Colors.white : Colors.grey, fontSize: 14, fontWeight: FontWeight.bold)),
-                      const SizedBox(width: 8),
-                      if (isDone)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: Colors.green.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
-                          child: Text('DONE', style: GoogleFonts.prompt(color: Colors.green, fontSize: 8, fontWeight: FontWeight.bold)),
-                        )
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(6)),
+                        child: Text('DAILY CHALLENGE',
+                            style: GoogleFonts.prompt(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: 10),
+                      const DailyCountdown(),
                     ],
                   ),
-                  Text(desc, style: GoogleFonts.prompt(color: const Color(0xFF64748B), fontSize: 11)),
+                  const SizedBox(height: 10),
+                  Text('🎯 "IT Problem Solving & Automation"',
+                      style: GoogleFonts.prompt(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text('เขียนโปรแกรมหรือ Script ตรวจสอบระบบอัตโนมัติ เพื่อเพิ่มความเร็วในการทำงาน',
+                      style: GoogleFonts.prompt(color: const Color(0xFFFDE68A), fontSize: 12)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      ElevatedButton(
+                        onPressed: () => onNavigate(4),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: Text('รับ Challenge (+75 XP)',
+                            style: GoogleFonts.prompt(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(xp, style: GoogleFonts.prompt(color: isUnlocked ? Colors.amber : Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
-                if (!isUnlocked) const Icon(Icons.lock, size: 14, color: Colors.grey),
-              ],
-            )
+            const SizedBox(height: 24),
+
+            Text('ประมาณการเงินเดือนสายงาน IT ในไทย',
+                style: GoogleFonts.prompt(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            LayoutBuilder(builder: (context, constraints) {
+              final wide = constraints.maxWidth > 700;
+              final tiers = [
+                {'label': 'Junior IT / Dev', 'range': '฿20–35K', 'minXP': 0, 'color': const Color(0xFF34D399)},
+                {'label': 'Mid-Level Specialist', 'range': '฿40–80K', 'minXP': 180, 'color': const Color(0xFF60A5FA)},
+                {'label': 'Senior Expert', 'range': '฿85–150K', 'minXP': 400, 'color': const Color(0xFFC084FC)},
+                {'label': 'Tech Lead / CTO', 'range': '฿180K+', 'minXP': 700, 'color': const Color(0xFFFBBF24)},
+              ];
+              return GridView.count(
+                crossAxisCount: wide ? 4 : 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 1.3,
+                children: tiers.map((t) {
+                  final unlocked = state.totalXP >= (t['minXP'] as int);
+                  final color = t['color'] as Color;
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F172A),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: color.withOpacity(0.35)),
+                    ),
+                    child: Opacity(
+                      opacity: unlocked ? 1 : 0.45,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(t['label'] as String,
+                                    style: GoogleFonts.prompt(color: const Color(0xFF64748B), fontSize: 10, fontWeight: FontWeight.bold)),
+                              ),
+                              if (!unlocked) const Icon(Icons.lock, color: Color(0xFF475569), size: 12),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(t['range'] as String,
+                              style: GoogleFonts.prompt(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              );
+            }),
+            const SizedBox(height: 24),
+
+            Text('ภารกิจพื้นฐาน (General IT Missions)',
+                style: GoogleFonts.prompt(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            _missionTile(
+              context,
+              index: 1,
+              title: 'Greeting Automation Script',
+              desc: 'เขียน Script ตอบรับและแสดงผลการทักทายผู้ใช้งานระบบอัตโนมัติ',
+              xp: 40,
+              money: 5000,
+              locked: false,
+              done: state.missionsDone >= 1,
+              onTap: () => onNavigate(4),
+            ),
+            const SizedBox(height: 10),
+            _missionTile(
+              context,
+              index: 2,
+              title: 'System Metric Calculator',
+              desc: 'สร้างระบบคำนวณและประมวลผลทรัพยากรของเครื่องเซิร์ฟเวอร์',
+              xp: 60,
+              money: 8000,
+              locked: state.missionsDone < 1,
+              done: state.missionsDone >= 2,
+              onTap: state.missionsDone >= 1 ? () => onNavigate(4) : null,
+            ),
+            const SizedBox(height: 10),
+            _missionTile(
+              context,
+              index: 3,
+              title: 'API Data Integration',
+              desc: 'เชื่อมต่อ REST API ดึงข้อมูลและจัดการแสดงผลแบบ JSON',
+              xp: 80,
+              money: 12000,
+              locked: state.missionsDone < 2,
+              done: state.missionsDone >= 3,
+              onTap: state.missionsDone >= 2 ? () => onNavigate(4) : null,
+            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _missionTile(
+      BuildContext context, {
+        required int index,
+        required String title,
+        required String desc,
+        required int xp,
+        required int money,
+        required bool locked,
+        required bool done,
+        VoidCallback? onTap,
+      }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F172A),
+          borderRadius: BorderRadius.circular(14),
+          border: Border(
+            left: BorderSide(color: done ? const Color(0xFF10B981) : (locked ? const Color(0xFF334155) : const Color(0xFF3B82F6)), width: 3),
+          ),
+        ),
+        child: Opacity(
+          opacity: locked ? 0.5 : 1,
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: locked ? const Color(0xFF0B1220) : const Color(0xFF1E3A8A).withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: done
+                    ? const Icon(Icons.check, color: Color(0xFF34D399), size: 18)
+                    : Text('0$index', style: GoogleFonts.jetBrainsMono(color: const Color(0xFF60A5FA), fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(child: Text(title, style: GoogleFonts.prompt(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold))),
+                        if (locked) const Padding(padding: EdgeInsets.only(left: 6), child: Icon(Icons.lock, color: Color(0xFF64748B), size: 12)),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(desc, style: GoogleFonts.prompt(color: const Color(0xFF64748B), fontSize: 11)),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('+$xp XP', style: GoogleFonts.prompt(color: const Color(0xFFFBBF24), fontSize: 11, fontWeight: FontWeight.bold)),
+                  Text('+฿${formatMoney(money)}', style: GoogleFonts.prompt(color: const Color(0xFF64748B), fontSize: 9)),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -659,7 +1016,7 @@ class ITCenterDashboardScreen extends StatelessWidget {
 }
 
 // ==========================================
-// TAB 2: AI MENTOR CHATBOT
+// TAB 2: AI MENTOR CHAT
 // ==========================================
 class AIMentorChatScreen extends StatefulWidget {
   const AIMentorChatScreen({super.key});
@@ -671,7 +1028,6 @@ class AIMentorChatScreen extends StatefulWidget {
 class _AIMentorChatScreenState extends State<AIMentorChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-
   final List<ChatMessage> _messages = [
     ChatMessage(
       text: "สวัสดีครับ! ผมคือ **AI Mentor** ผู้ช่วยวางแผนเส้นทางอาชีพ IT ของคุณ วันนี้อยากปรึกษาเรื่องทักษะ คอร์สเรียน หรือจำลองการสัมภาษณ์งานดีครับ?",
@@ -680,13 +1036,38 @@ class _AIMentorChatScreenState extends State<AIMentorChatScreen> {
   ];
   bool _isLoading = false;
 
-  final List<String> quickPrompts = [
-    "เตรียมพอร์ตยังไงให้ได้งานแรก",
-    "ไม่ได้จบตรงสายเริ่มยังไง",
-    "จำลองสัมภาษณ์งานตำแหน่ง Junior",
-    "ทักษะที่ตลาดต้องการมากที่สุด",
-    "ฐานเงินเดือนเริ่มต้นแต่ละสาย"
+  final List<String> _quickPrompts = const [
+    'เตรียมพอร์ตยังไงให้ได้งานแรก',
+    'ไม่ได้จบตรงสายเริ่มยังไง',
+    'จำลองสัมภาษณ์งานตำแหน่ง Junior',
+    'ทักษะที่ตลาดต้องการมากที่สุด',
+    'ฐานเงินเดือนเริ่มต้นแต่ละสาย',
   ];
+
+  final Map<String, String> _quickPromptFull = const {
+    'เตรียมพอร์ตยังไงให้ได้งานแรก':
+    'เด็กจบใหม่ไม่มีประสบการณ์ ควรเริ่มเตรียมพอร์ตโฟลิโออย่างไรให้เตะตากรรมการ',
+    'ไม่ได้จบตรงสายเริ่มยังไง':
+    'อยากเริ่มทำงานสาย IT แต่ไม่ได้จบตรงสาย ต้องวางแผนและเริ่มเรียนรู้จากอะไรก่อน',
+    'จำลองสัมภาษณ์งานตำแหน่ง Junior':
+    'ช่วยจำลองคำถามสัมภาษณ์งานตำแหน่ง Junior Developer และแนวทางการตอบให้หน่อย',
+    'ทักษะที่ตลาดต้องการมากที่สุด':
+    'ทักษะหรือสกิลที่ตลาดแรงงาน IT ต้องการมากที่สุดตอนนี้มีอะไรบ้าง',
+    'ฐานเงินเดือนเริ่มต้นแต่ละสาย':
+    'ฐานเงินเดือนเริ่มต้นของสายงาน IT แต่ละสายงานอยู่ที่ประมาณเท่าไหร่',
+  };
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
 
   Future<void> _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
@@ -700,13 +1081,13 @@ class _AIMentorChatScreenState extends State<AIMentorChatScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('https://open-garlics-poke.loca.lt/api/mentor'),
+        Uri.parse(kMentorApiUrl),
         headers: {
           'Content-Type': 'application/json',
           'Bypass-Tunnel-Reminder': 'true',
         },
         body: jsonEncode({'message': text}),
-      ).timeout(const Duration(seconds: 15));
+      ).timeout(const Duration(seconds: 25));
 
       if (!mounted) return;
 
@@ -723,7 +1104,7 @@ class _AIMentorChatScreenState extends State<AIMentorChatScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _messages.add(ChatMessage(text: 'ระบบขัดข้องชั่วคราว แต่จากประสบการณ์ของผม แนะนำให้เริ่มจากการสร้าง Portfolio โชว์ผลงานจริงครับ', isUser: false));
+        _messages.add(ChatMessage(text: 'ไม่สามารถเชื่อมต่อ AI Mentor API ได้ ($e)', isUser: false));
       });
     } finally {
       if (mounted) {
@@ -731,18 +1112,6 @@ class _AIMentorChatScreenState extends State<AIMentorChatScreen> {
         _scrollToBottom();
       }
     }
-  }
-
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
   }
 
   @override
@@ -796,42 +1165,42 @@ class _AIMentorChatScreenState extends State<AIMentorChatScreen> {
           if (_isLoading)
             const Padding(
               padding: EdgeInsets.all(8.0),
-              child: CircularProgressIndicator(color: Color(0xFF10B981)),
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(color: Color(0xFF10B981), strokeWidth: 2.5),
+              ),
             ),
-
-          // Quick Prompts Horizontal Scroll
           Container(
             color: const Color(0xFF0F172A),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: quickPrompts.map((prompt) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: InkWell(
-                      onTap: () => _sendMessage(prompt),
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF064E3B).withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFF047857)),
-                        ),
-                        child: Text(
-                          prompt,
-                          style: GoogleFonts.prompt(color: const Color(0xFF34D399), fontSize: 11),
-                        ),
+            padding: const EdgeInsets.only(top: 8),
+            child: SizedBox(
+              height: 40,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                itemCount: _quickPrompts.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, i) {
+                  final label = _quickPrompts[i];
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: _isLoading ? null : () => _sendMessage(_quickPromptFull[label] ?? label),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF022C22),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFF065F46)),
                       ),
+                      alignment: Alignment.center,
+                      child: Text(label, style: GoogleFonts.prompt(color: const Color(0xFF34D399), fontSize: 11)),
                     ),
                   );
-                }).toList(),
+                },
               ),
             ),
           ),
-
-          // Input Box
           Container(
             padding: const EdgeInsets.all(12),
             color: const Color(0xFF0F172A),
@@ -851,7 +1220,7 @@ class _AIMentorChatScreenState extends State<AIMentorChatScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.send_rounded, color: Color(0xFF10B981)),
-                  onPressed: () => _sendMessage(_controller.text),
+                  onPressed: _isLoading ? null : () => _sendMessage(_controller.text),
                 ),
               ],
             ),
@@ -870,52 +1239,98 @@ class ITTracksScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = Provider.of<AppState>(context);
-
+    final state = context.watch<AppState>();
     return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('เลือกสายงาน IT (Specialization Tracks)', style: GoogleFonts.prompt(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('เลือกสายงาน IT (Specialization Tracks)',
+                style: GoogleFonts.prompt(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text('แตะเพื่อเลือกสายงานที่คุณสนใจ ระบบจะจดจำสายงานที่เลือกไว้',
+                style: GoogleFonts.prompt(color: const Color(0xFF64748B), fontSize: 12)),
             const SizedBox(height: 16),
-            _buildTrackCard(state, 'swe', 'Software & Web Development', 'Frontend / Backend / Full-Stack', 'พัฒนาแอปพลิเคชัน เว็บไซต์ และซอฟต์แวร์ระบบ', Icons.code, Colors.blue),
-            _buildTrackCard(state, 'data', 'Data & AI Engineering', 'Data Science / ML / Data Analyst', 'วิเคราะห์ข้อมูล และสร้างแบบจำลอง AI Machine Learning', Icons.psychology, Colors.purple),
-            _buildTrackCard(state, 'devops', 'Cloud & DevOps', 'Cloud Engineer / SysAdmin / CI/CD', 'ดูแลโครงสร้างพื้นฐานคลาวด์ และระบบอัตโนมัติ', Icons.cloud, const Color(0xFF10B981)),
-            _buildTrackCard(state, 'sec', 'Cybersecurity', 'SOC Analyst / Security / Pentester', 'คุ้มครองและป้องกันระบบสารสนเทศ ตรวจจับช่องโหว่', Icons.security, const Color(0xFFF43F5E)),
+            _buildTrackCard(context, state, 'swe', 'Software & Web Development', 'Frontend / Backend / Full-Stack',
+                'พัฒนาแอปพลิเคชัน เว็บไซต์ และซอฟต์แวร์ระบบ', Icons.code, Colors.blue,
+                ['Python', 'Node.js', 'React', 'SQL']),
+            _buildTrackCard(context, state, 'data', 'Data & AI Engineering', 'Data Science / ML / Data Analyst',
+                'วิเคราะห์ข้อมูล และสร้างแบบจำลอง AI Machine Learning', Icons.psychology, Colors.purple,
+                ['Python', 'Pandas', 'SQL', 'PowerBI']),
+            _buildTrackCard(context, state, 'devops', 'Cloud & DevOps', 'Cloud Engineer / SysAdmin / CI/CD',
+                'ดูแลโครงสร้างพื้นฐานคลาวด์ และระบบอัตโนมัติ', Icons.cloud, const Color(0xFF10B981),
+                ['AWS/GCP', 'Docker', 'Linux', 'Terraform']),
+            _buildTrackCard(context, state, 'sec', 'Cybersecurity', 'SOC Analyst / Security / Pentester',
+                'คุ้มครองและป้องกันระบบสารสนเทศ ตรวจจับช่องโหว่', Icons.security, const Color(0xFFF43F5E),
+                ['Network', 'Linux', 'SIEM', 'Wireshark']),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTrackCard(AppState state, String id, String title, String subtitle, String desc, IconData icon, Color color) {
-    bool isActive = state.selectedTrack == id;
+  Widget _buildTrackCard(BuildContext context, AppState state, String id, String title, String subtitle, String desc,
+      IconData icon, Color color, List<String> tags) {
+    final active = state.selectedTrack == id;
     return InkWell(
-      onTap: () => state.selectTrack(id),
+      onTap: () {
+        context.read<AppState>().selectTrack(id);
+        showAppToast(context, 'เปลี่ยนเป็นสายงาน: $title', type: ToastType.info);
+      },
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isActive ? color.withOpacity(0.1) : const Color(0xFF0F172A),
+          color: active ? const Color(0xFF10B981).withOpacity(0.08) : const Color(0xFF0F172A),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isActive ? color : const Color(0xFF1E293B)),
+          border: Border.all(color: active ? const Color(0xFF10B981) : const Color(0xFF1E293B), width: active ? 1.5 : 1),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(backgroundColor: color.withOpacity(0.2), radius: 24, child: Icon(icon, color: color)),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: GoogleFonts.prompt(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                  Text(subtitle, style: GoogleFonts.jetBrainsMono(color: color, fontSize: 11)),
-                  const SizedBox(height: 4),
-                  Text(desc, style: GoogleFonts.prompt(color: const Color(0xFF64748B), fontSize: 12)),
-                ],
-              ),
+            Row(
+              children: [
+                CircleAvatar(backgroundColor: color.withOpacity(0.2), radius: 24, child: Icon(icon, color: color)),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(child: Text(title, style: GoogleFonts.prompt(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold))),
+                          if (active)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(color: const Color(0xFF065F46), borderRadius: BorderRadius.circular(6)),
+                                child: Text('เลือกอยู่', style: GoogleFonts.prompt(color: const Color(0xFF34D399), fontSize: 9, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                        ],
+                      ),
+                      Text(subtitle, style: GoogleFonts.jetBrainsMono(color: color, fontSize: 11)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(desc, style: GoogleFonts.prompt(color: const Color(0xFF64748B), fontSize: 12)),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: tags
+                  .map((t) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(6)),
+                child: Text(t, style: GoogleFonts.jetBrainsMono(color: const Color(0xFFCBD5E1), fontSize: 10)),
+              ))
+                  .toList(),
             ),
           ],
         ),
@@ -932,8 +1347,7 @@ class CareerRoadmapScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = Provider.of<AppState>(context);
-
+    final state = context.watch<AppState>();
     return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -941,84 +1355,84 @@ class CareerRoadmapScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Career Roadmap (IT Industry)', style: GoogleFonts.prompt(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('บันไดความก้าวหน้าและฐานเงินเดือนจริงในอุตสาหกรรม IT ไทย',
+                style: GoogleFonts.prompt(color: const Color(0xFF64748B), fontSize: 12)),
             const SizedBox(height: 20),
-
-            // Roadmap Steps
-            _buildRoadmapCard(
-              title: 'Junior IT / Dev Specialist',
-              reqXP: 0,
-              currentXP: state.totalXP,
-              color: Colors.green,
-              salary: '฿20K - 35K',
-            ),
-            _buildRoadmapArrow(),
-            _buildRoadmapCard(
-              title: 'Mid-Level IT Specialist',
-              reqXP: 100,
-              currentXP: state.totalXP,
-              color: Colors.blue,
-              salary: '฿40K - 80K',
-            ),
-            _buildRoadmapArrow(),
-            _buildRoadmapCard(
-              title: 'Senior IT Expert / Specialist',
-              reqXP: 300,
-              currentXP: state.totalXP,
-              color: Colors.purple,
-              salary: '฿85K - 150K',
-            ),
-            _buildRoadmapArrow(),
-            _buildRoadmapCard(
-              title: 'Tech Lead / Solution Architect',
-              reqXP: 500,
-              currentXP: state.totalXP,
-              color: Colors.amber,
-              salary: '฿180K+',
-            ),
-
-            const SizedBox(height: 30),
-
-            // Radar Chart
-            Text('IT Multi-Domain Skill Analysis', style: GoogleFonts.prompt(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
+            _roadmapStep(state, emoji: '🟢', title: 'Junior IT / Dev Specialist', requiredXP: 0,
+                skills: 'ทักษะพื้นฐาน Coding, Basic Scripting, Database Fundamentals, Network Intro',
+                start: 20000, avg: 28000, max: 35000, years: '0–2 ปี', color: const Color(0xFF10B981)),
+            _roadmapArrow(),
+            _roadmapStep(state, emoji: '🔵', title: 'Mid-Level IT Specialist', requiredXP: 180,
+                skills: 'OOP, API Design, Containerization, Automation & Security Basics',
+                start: 40000, avg: 60000, max: 80000, years: '2–5 ปี', color: const Color(0xFF3B82F6)),
+            _roadmapArrow(),
+            _roadmapStep(state, emoji: '🟣', title: 'Senior IT Expert / Specialist', requiredXP: 400,
+                skills: 'System Design, High Availability, Cloud Architecture, Advanced Security',
+                start: 85000, avg: 115000, max: 150000, years: '5+ ปี', color: const Color(0xFFA855F7)),
+            _roadmapArrow(),
+            _roadmapStep(state, emoji: '👑', title: 'Tech Lead / Solution Architect / CTO', requiredXP: 700,
+                skills: 'IT Strategy, Enterprise Architecture, Business Alignment, Leadership',
+                start: 180000, avg: 250000, max: -1, years: '8+ ปี', color: const Color(0xFFF59E0B)),
+            const SizedBox(height: 24),
             Container(
-              height: 280,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: const Color(0xFF0F172A),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: const Color(0xFF1E293B)),
               ),
-              child: RadarChart(
-                RadarChartData(
-                  radarShape: RadarShape.polygon,
-                  ticksTextStyle: const TextStyle(color: Colors.transparent),
-                  titlePositionPercentageOffset: 0.2,
-                  getTitle: (index, angle) {
-                    switch (index) {
-                      case 0: return const RadarChartTitle(text: 'Coding');
-                      case 1: return const RadarChartTitle(text: 'System');
-                      case 2: return const RadarChartTitle(text: 'DevOps');
-                      case 3: return const RadarChartTitle(text: 'Database');
-                      case 4: return const RadarChartTitle(text: 'Security');
-                      default: return const RadarChartTitle(text: '');
-                    }
-                  },
-                  dataSets: [
-                    RadarDataSet(
-                      fillColor: const Color(0xFF10B981).withOpacity(0.3),
-                      borderColor: const Color(0xFF10B981),
-                      entryRadius: 3,
-                      dataEntries: [
-                        RadarEntry(value: 30 + (state.totalXP * 0.1).clamp(0, 70).toDouble()),
-                        RadarEntry(value: 20 + (state.totalXP * 0.08).clamp(0, 80).toDouble()),
-                        RadarEntry(value: 10 + (state.totalXP * 0.05).clamp(0, 90).toDouble()),
-                        RadarEntry(value: 40 + (state.totalXP * 0.06).clamp(0, 60).toDouble()),
-                        RadarEntry(value: 20 + (state.totalXP * 0.04).clamp(0, 80).toDouble()),
-                      ],
-                    )
-                  ],
-                ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.radar, color: Color(0xFF60A5FA), size: 18),
+                      const SizedBox(width: 8),
+                      Text('IT Multi-Domain Skill Analysis',
+                          style: GoogleFonts.prompt(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 260,
+                    child: RadarChart(
+                      RadarChartData(
+                        radarShape: RadarShape.polygon,
+                        ticksTextStyle: const TextStyle(color: Colors.transparent),
+                        titlePositionPercentageOffset: 0.2,
+                        getTitle: (index, angle) {
+                          const labels = ['Coding', 'System', 'DevOps', 'Database', 'Security'];
+                          return RadarChartTitle(text: labels[index % labels.length]);
+                        },
+                        dataSets: [
+                          RadarDataSet(
+                            fillColor: const Color(0xFF3B82F6).withOpacity(0.15),
+                            borderColor: const Color(0xFF3B82F6),
+                            entryRadius: 2,
+                            dataEntries: const [
+                              RadarEntry(value: 85),
+                              RadarEntry(value: 80),
+                              RadarEntry(value: 75),
+                              RadarEntry(value: 75),
+                              RadarEntry(value: 70),
+                            ],
+                          ),
+                          RadarDataSet(
+                            fillColor: const Color(0xFF10B981).withOpacity(0.25),
+                            borderColor: const Color(0xFF10B981),
+                            entryRadius: 3,
+                            dataEntries: [
+                              RadarEntry(value: (state.totalXP / 8).clamp(5, 100).toDouble()),
+                              RadarEntry(value: (state.totalXP / 10).clamp(5, 100).toDouble()),
+                              RadarEntry(value: (state.totalXP / 12).clamp(5, 100).toDouble()),
+                              RadarEntry(value: (state.totalXP / 9).clamp(5, 100).toDouble()),
+                              RadarEntry(value: (state.totalXP / 14).clamp(5, 100).toDouble()),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -1027,47 +1441,106 @@ class CareerRoadmapScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRoadmapArrow() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 4),
-      child: Center(child: Icon(Icons.arrow_downward, color: Colors.grey, size: 20)),
-    );
-  }
+  Widget _roadmapArrow() => const Padding(
+    padding: EdgeInsets.symmetric(vertical: 4),
+    child: Center(child: Icon(Icons.arrow_downward, color: Color(0xFF334155), size: 16)),
+  );
 
-  Widget _buildRoadmapCard({required String title, required int reqXP, required int currentXP, required Color color, required String salary}) {
-    bool unlocked = currentXP >= reqXP;
+  Widget _roadmapStep(
+      AppState state, {
+        required String emoji,
+        required String title,
+        required int requiredXP,
+        required String skills,
+        required int start,
+        required int avg,
+        required int max,
+        required String years,
+        required Color color,
+      }) {
+    final unlocked = state.totalXP >= requiredXP;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: unlocked ? color.withOpacity(0.5) : const Color(0xFF1E293B)),
+        color: unlocked ? color.withOpacity(0.08) : const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: unlocked ? color.withOpacity(0.4) : const Color(0xFF1E293B)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: unlocked ? color.withOpacity(0.2) : Colors.grey.withOpacity(0.1), shape: BoxShape.circle),
-            child: Icon(unlocked ? Icons.check : Icons.lock, color: unlocked ? color : Colors.grey, size: 20),
+            width: 56,
+            height: 56,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
+            child: Text(emoji, style: const TextStyle(fontSize: 26)),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: GoogleFonts.prompt(color: unlocked ? Colors.white : Colors.grey, fontSize: 14, fontWeight: FontWeight.bold)),
-                Text(unlocked ? 'Salary: $salary' : 'ล็อก (ต้องการ $reqXP XP)', style: GoogleFonts.prompt(color: unlocked ? color : Colors.grey, fontSize: 11)),
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  children: [
+                    Text(title,
+                        style: GoogleFonts.prompt(
+                            color: unlocked ? Colors.white : const Color(0xFF64748B), fontSize: 15, fontWeight: FontWeight.bold)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: unlocked ? color.withOpacity(0.2) : const Color(0xFF1E293B),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        unlocked ? 'UNLOCKED' : 'ล็อก (ต้องการ $requiredXP XP)',
+                        style: GoogleFonts.prompt(color: unlocked ? color : const Color(0xFF64748B), fontSize: 9, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(skills, style: GoogleFonts.prompt(color: const Color(0xFF64748B), fontSize: 11)),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _statBox('เริ่มต้น', '฿${formatMoney(start)}', color),
+                    const SizedBox(width: 8),
+                    _statBox('เฉลี่ย', '฿${formatMoney(avg)}', color),
+                    const SizedBox(width: 8),
+                    _statBox('สูงสุด', max > 0 ? '฿${formatMoney(max)}' : 'Unlimited', color),
+                    const SizedBox(width: 8),
+                    _statBox('ระยะเวลา', years, const Color(0xFF94A3B8)),
+                  ],
+                ),
               ],
             ),
-          )
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _statBox(String label, String value, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8)),
+        child: Column(
+          children: [
+            Text(value, style: GoogleFonts.prompt(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+            Text(label, style: GoogleFonts.prompt(color: const Color(0xFF64748B), fontSize: 8)),
+          ],
+        ),
       ),
     );
   }
 }
 
 // ==========================================
-// TAB 5: LIVE SANDBOX (HYBRID: WINDOWS + MOBILE)
+// TAB 5: LIVE SANDBOX (DESKTOP PYTHON + MOBILE PYODIDE)
 // ==========================================
 class LiveSandboxScreen extends StatefulWidget {
   const LiveSandboxScreen({super.key});
@@ -1077,19 +1550,29 @@ class LiveSandboxScreen extends StatefulWidget {
 }
 
 class _LiveSandboxScreenState extends State<LiveSandboxScreen> {
-  final TextEditingController _codeController = TextEditingController();
+  final TextEditingController _codeController = TextEditingController(
+    text: "user_name = input('Enter your name: ')\nprint(f\"Hello, {user_name}!\")",
+  );
   final TextEditingController _consoleInputController = TextEditingController();
+  final ScrollController _consoleScrollController = ScrollController();
 
   String _output = "System ready. Select a script to run.\n";
   bool _isReady = false;
   bool _isRunning = false;
+  bool _isTesting = false;
 
-  // สำหรับ Windows
+  bool? _test1Pass;
+  bool? _test2Pass;
+
+  bool _hintVisible = false;
+  bool _hintLoading = false;
+  String _hintText = '';
+
   bool _isDesktop = false;
   String _pythonCommand = '';
 
-  // สำหรับ Mobile
   late final WebViewController _webViewController;
+  Completer<String>? _pendingCompleter;
 
   @override
   void initState() {
@@ -1098,31 +1581,37 @@ class _LiveSandboxScreenState extends State<LiveSandboxScreen> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final state = Provider.of<AppState>(context, listen: false);
-    _codeController.text = state.files[state.activeFile] ?? '';
-  }
-
-  @override
   void dispose() {
     _codeController.dispose();
     _consoleInputController.dispose();
+    _consoleScrollController.dispose();
     super.dispose();
+  }
+
+  void _appendOutput(String text) {
+    setState(() => _output += text);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_consoleScrollController.hasClients) {
+        _consoleScrollController.jumpTo(_consoleScrollController.position.maxScrollExtent);
+      }
+    });
   }
 
   Future<void> _initEnvironment() async {
     if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
       _isDesktop = true;
-      _checkLocalPython();
+      await _checkLocalPython();
     } else {
       _isDesktop = false;
       _initMobilePyodide();
     }
   }
 
+  // --------------------------------------------------
+  // DESKTOP (LOCAL PYTHON)
+  // --------------------------------------------------
   Future<void> _checkLocalPython() async {
-    final candidates = <String>['python', 'py'];
+    final candidates = <String>['python3', 'python', 'py'];
     for (final command in candidates) {
       try {
         final args = command == 'py' ? <String>['-3', '--version'] : <String>['--version'];
@@ -1133,7 +1622,7 @@ class _LiveSandboxScreenState extends State<LiveSandboxScreen> {
           setState(() {
             _pythonCommand = command;
             _isReady = true;
-            _output += "\n✅ [Desktop Mode] Python พร้อมใช้งานแล้ว";
+            _output += "\n✅ [Desktop Mode] Python พร้อมใช้งานแล้ว ($command)";
           });
           return;
         }
@@ -1147,20 +1636,31 @@ class _LiveSandboxScreenState extends State<LiveSandboxScreen> {
     });
   }
 
+  Future<String> _runDesktopOnce(String code, String inputLine) async {
+    final args = _pythonCommand == 'py' ? <String>['-3', '-c', code] : <String>['-c', code];
+    final process = await Process.start(_pythonCommand, args, runInShell: true);
+    process.stdin.writeln(inputLine);
+    // In case the script asks for more than one input, keep feeding blank/prior value.
+    for (int i = 0; i < 4; i++) {
+      process.stdin.writeln(inputLine);
+    }
+    await process.stdin.close();
+    final stdoutText = await process.stdout.transform(utf8.decoder).join();
+    final stderrText = await process.stderr.transform(utf8.decoder).join();
+    await process.exitCode;
+    return stderrText.isNotEmpty ? "$stdoutText\n[stderr]\n$stderrText" : stdoutText;
+  }
+
   Future<void> _runDesktopCode() async {
     final code = _codeController.text;
-    setState(() {
-      _isRunning = true;
-      _output += "\n\n▶ Executing script...\n";
-    });
+    _appendOutput("\n\n▶ Executing main.py...\n");
 
     try {
       final args = _pythonCommand == 'py' ? <String>['-3', '-c', code] : <String>['-c', code];
       final process = await Process.start(_pythonCommand, args, runInShell: true);
 
-      // ใส่ input ปลอม
       for (int i = 0; i < 5; i++) {
-        process.stdin.writeln('John');
+        process.stdin.writeln('5');
       }
       await process.stdin.close();
 
@@ -1187,6 +1687,9 @@ class _LiveSandboxScreenState extends State<LiveSandboxScreen> {
     }
   }
 
+  // --------------------------------------------------
+  // MOBILE (PYODIDE WEBVIEW)
+  // --------------------------------------------------
   void _initMobilePyodide() {
     const String pyodideHtml = '''
       <!DOCTYPE html>
@@ -1208,19 +1711,15 @@ class _LiveSandboxScreenState extends State<LiveSandboxScreen> {
           }
           main();
 
-          async function runPython(code) {
+          async function runPython(code, inputValue) {
             try {
               let output = "";
               pyodide.setStdout({ batched: (msg) => { output += msg + "\\n"; } });
               pyodide.setStderr({ batched: (msg) => { output += "[stderr] " + msg + "\\n"; } });
-              
-              const prepCode = `
-import builtins
-def mock_input(prompt=""):
-    return "John"
-builtins.input = mock_input
-              ` + "\\n" + code;
-              
+
+              const inputJson = JSON.stringify(inputValue);
+              const prepCode = "import builtins\\ndef mock_input(prompt=''):\\n    return " + inputJson + "\\nbuiltins.input = mock_input\\n" + code;
+
               await pyodide.runPythonAsync(prepCode);
               SandboxChannel.postMessage("RESULT: " + output);
             } catch (err) {
@@ -1243,15 +1742,30 @@ builtins.input = mock_input
               _output += "\n✅ [Mobile Mode] Pyodide พร้อมใช้งานแล้ว";
             });
           } else if (message.message.startsWith("RESULT: ")) {
-            setState(() {
-              _output += message.message.replaceFirst("RESULT: ", "").trim();
-              _isRunning = false;
-            });
+            final text = message.message.replaceFirst("RESULT: ", "").trim();
+            if (_pendingCompleter != null) {
+              final c = _pendingCompleter!;
+              _pendingCompleter = null;
+              if (!c.isCompleted) c.complete(text);
+            } else {
+              setState(() {
+                _output += text;
+                if (_output.endsWith("Executing main.py...\n")) _output += "Script finished successfully.";
+                _isRunning = false;
+              });
+            }
           } else if (message.message.startsWith("ERROR: ")) {
-            setState(() {
-              _output += "[Python Error]\n" + message.message.replaceFirst("ERROR: ", "");
-              _isRunning = false;
-            });
+            final text = message.message.replaceFirst("ERROR: ", "");
+            if (_pendingCompleter != null) {
+              final c = _pendingCompleter!;
+              _pendingCompleter = null;
+              if (!c.isCompleted) c.complete("[Error] $text");
+            } else {
+              setState(() {
+                _output += "[Python Error]\n$text";
+                _isRunning = false;
+              });
+            }
           }
         },
       )
@@ -1260,64 +1774,43 @@ builtins.input = mock_input
 
   void _runMobileCode() {
     final code = _codeController.text;
-    setState(() {
-      _isRunning = true;
-      _output += "\n\n▶ Executing on Pyodide...\n";
-    });
-
-    final encodedCode = jsonEncode(code);
-    _webViewController.runJavaScript('runPython($encodedCode);');
+    _appendOutput("\n\n▶ Executing on Pyodide...\n");
+    final argsStr = '${jsonEncode(code)}, ${jsonEncode("5")}';
+    _webViewController.runJavaScript('runPython($argsStr);');
   }
 
+  Future<String> _runMobileOnce(String code, String inputValue) {
+    final completer = Completer<String>();
+    _pendingCompleter = completer;
+    final argsStr = '${jsonEncode(code)}, ${jsonEncode(inputValue)}';
+    _webViewController.runJavaScript('runPython($argsStr);');
+    return completer.future.timeout(
+      const Duration(seconds: 15),
+      onTimeout: () {
+        _pendingCompleter = null;
+        return '[Error] Timeout waiting for Pyodide';
+      },
+    );
+  }
+
+  // --------------------------------------------------
+  // EXECUTE / RESET
+  // --------------------------------------------------
   void _execute() {
     if (!_isReady || _isRunning) return;
     if (_codeController.text.trim().isEmpty) {
-      setState(() => _output += "\n[Error] กรุณาใส่ Python code ก่อน");
+      _appendOutput("\n[Error] กรุณาใส่ Python code ก่อน");
       return;
     }
 
-    Provider.of<AppState>(context, listen: false).incrementRunCount();
+    setState(() => _isRunning = true);
+    context.read<AppState>().incrementRunCount();
+    _announceNewBadges();
 
     if (_isDesktop) {
       _runDesktopCode();
     } else {
       _runMobileCode();
-    }
-  }
-
-  void _runTests(AppState state) {
-    String code = _codeController.text;
-    bool hasInput = code.contains('input');
-    bool hasPrint = code.contains('print');
-    bool hasHello = code.contains('Hello');
-
-    setState(() {
-      _output += "\n\n▶ Running Tests...";
-    });
-
-    Future.delayed(const Duration(milliseconds: 500), () {
-      bool pass = hasInput && hasPrint && hasHello;
-      state.updateTests(pass, pass);
-      setState(() {
-        if (pass) {
-          _output += "\n✅ All tests passed! Ready to submit.";
-        } else {
-          _output += "\n❌ Tests failed. Please check your output format and input usage.";
-        }
-      });
-    });
-  }
-
-  void _submitProject(AppState state) {
-    if (state.test1Passed && state.test2Passed) {
-      state.completeMission(40);
-      setState(() {
-        _output += "\n🎉 Project Submitted Successfully! +40 XP";
-      });
-    } else {
-      setState(() {
-        _output += "\n⚠️ Cannot submit. Please run and pass tests first.";
-      });
     }
   }
 
@@ -1327,14 +1820,128 @@ builtins.input = mock_input
     });
   }
 
+  void _announceNewBadges() {
+    final newly = context.read<AppState>().checkBadgesAndReturnNew();
+    for (final b in newly) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          showAppToast(context, '🏅 Achievement: "${b.name}" — ${b.desc}', type: ToastType.badge);
+        }
+      });
+    }
+  }
+
+  // --------------------------------------------------
+  // RUN TESTS (real functional replacement of JS runTests)
+  // --------------------------------------------------
+  Future<void> _runTests() async {
+    if (!_isReady || _isTesting) return;
+    setState(() {
+      _isTesting = true;
+      _test1Pass = null;
+      _test2Pass = null;
+    });
+    _appendOutput("\n\n🧪 IT Automated Testing System\n");
+
+    final code = _codeController.text;
+
+    String out1;
+    try {
+      out1 = _isDesktop ? await _runDesktopOnce(code, "John") : await _runMobileOnce(code, "John");
+    } catch (e) {
+      out1 = "[Error] $e";
+    }
+    final pass1 = out1.contains("Hello, John!");
+    if (!mounted) return;
+    setState(() => _test1Pass = pass1);
+    _appendOutput(pass1
+        ? "✅ Test 1 Passed → input \"John\" → output includes \"Hello, John!\"\n"
+        : "❌ Test 1 Failed → expected \"Hello, John!\", got: ${out1.trim()}\n");
+
+    String out2;
+    try {
+      out2 = _isDesktop ? await _runDesktopOnce(code, "สมชาย") : await _runMobileOnce(code, "สมชาย");
+    } catch (e) {
+      out2 = "[Error] $e";
+    }
+    final pass2 = out2.contains("Hello, สมชาย!");
+    if (!mounted) return;
+    setState(() => _test2Pass = pass2);
+    _appendOutput(pass2
+        ? "✅ Test 2 Passed → input \"สมชาย\" → output includes \"Hello, สมชาย!\"\n"
+        : "❌ Test 2 Failed → expected \"Hello, สมชาย!\", got: ${out2.trim()}\n");
+
+    setState(() => _isTesting = false);
+
+    final state = context.read<AppState>();
+    if (pass1 && pass2) {
+      final wasMissionDone = state.missionsDone >= 1;
+      state.completeMission(40);
+      _announceNewBadges();
+      if (!mounted) return;
+      if (!wasMissionDone) {
+        showAppToast(context, '🎉 ผ่านทุกเทสต์! ได้รับ +${40 * state.multiplier} XP', type: ToastType.success);
+        showSalaryUnlockDialog(context, "Greeting Automation Script", 40 * state.multiplier);
+      } else {
+        showAppToast(context, '✅ ผ่านทุกเทสต์!', type: ToastType.success);
+      }
+    } else {
+      if (!mounted) return;
+      showAppToast(context, 'เทสต์ยังไม่ผ่านทั้งหมด ลองปรับแก้โค้ดดูนะครับ 💪', type: ToastType.error);
+    }
+  }
+
+  // --------------------------------------------------
+  // AI HINT (real functional replacement of JS getAIHint)
+  // --------------------------------------------------
+  Future<void> _getAIHint() async {
+    setState(() {
+      _hintVisible = true;
+      _hintLoading = true;
+      _hintText = '';
+    });
+
+    final code = _codeController.text;
+    final promptMessage =
+        'ช่วยตรวจโค้ด Python นี้เพื่อทำ Mission "Greeting Automation Script":\n```python\n$code\n```\nคำโจทย์: รับชื่อผ่าน input() แล้วแสดงคำว่า "Hello, [ชื่อ]!"\nช่วยให้ AI Hint คำแนะนำแบบสั้นๆ กระชับ (ไม่เกิน 2 ประโยค) เพื่อบอกแนวทางการแก้ไขโดยตรง';
+
+    try {
+      final response = await http.post(
+        Uri.parse(kMentorApiUrl),
+        headers: {'Content-Type': 'application/json', 'Bypass-Tunnel-Reminder': 'true'},
+        body: jsonEncode({'message': promptMessage}),
+      ).timeout(const Duration(seconds: 20));
+
+      if (!mounted) return;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() => _hintText = data['reply'] ?? 'ลองตรวจสอบ f-string หรือการรับค่าตัวแปรผ่าน input() ดูก่อนนะครับ');
+      } else {
+        setState(() => _hintText = 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์ (${response.statusCode})');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() =>
+      _hintText = '💡 ลองตรวจสอบว่า input() รับค่าใส่ตัวแปรถูกต้อง และใช้ f-string แสดงผลรูปแบบ f"Hello, {user_name}!" หรือไม่ครับ');
+    } finally {
+      if (mounted) setState(() => _hintLoading = false);
+    }
+  }
+
+  void _submitProject() {
+    showAppToast(context, '✅ ส่งผลงานเข้าสู่ IT Cloud Portfolio สำเร็จ!', type: ToastType.success);
+  }
+
+  // --------------------------------------------------
+  // UI
+  // --------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    final state = Provider.of<AppState>(context);
     final bool isWide = MediaQuery.of(context).size.width >= 900;
 
     return Scaffold(
       backgroundColor: const Color(0xFF040709),
-      appBar: _buildIDEAppBar(state),
+      appBar: _buildIDEAppBar(),
       body: Column(
         children: [
           Expanded(
@@ -1342,9 +1949,9 @@ builtins.input = mock_input
                 ? Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildLeftSidebar(state),
+                _buildLeftSidebar(),
                 Container(width: 1, color: const Color(0xFF1E293B)),
-                Expanded(child: _buildCodeEditor(state)),
+                Expanded(child: _buildCodeEditor()),
                 Container(width: 1, color: const Color(0xFF1E293B)),
                 _buildRightConsole(),
               ],
@@ -1352,11 +1959,11 @@ builtins.input = mock_input
                 : SingleChildScrollView(
               child: Column(
                 children: [
-                  SizedBox(height: 400, child: _buildCodeEditor(state)),
+                  SizedBox(height: 340, child: _buildCodeEditor()),
                   Container(height: 1, color: const Color(0xFF1E293B)),
-                  SizedBox(height: 300, child: _buildRightConsole()),
+                  SizedBox(height: 260, child: _buildRightConsole()),
                   Container(height: 1, color: const Color(0xFF1E293B)),
-                  _buildLeftSidebar(state),
+                  _buildLeftSidebar(),
                 ],
               ),
             ),
@@ -1372,25 +1979,68 @@ builtins.input = mock_input
     );
   }
 
-  PreferredSizeWidget _buildIDEAppBar(AppState state) {
+  PreferredSizeWidget _buildIDEAppBar() {
     return AppBar(
       backgroundColor: const Color(0xFF0A0F1A),
       elevation: 0,
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1.0),
+        child: Container(color: const Color(0xFF1E293B), height: 1.0),
+      ),
       title: Row(
         children: [
           const Icon(Icons.terminal_rounded, color: Colors.blueAccent, size: 24),
           const SizedBox(width: 8),
-          Text('LearnPro IT Live Sandbox', style: GoogleFonts.prompt(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+          Flexible(
+            child: Text('LearnPro IT Live Sandbox',
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.prompt(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: (_isReady ? Colors.orange : Colors.grey).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _isReady ? Colors.orange.shade700 : Colors.grey),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(_isReady ? Icons.bolt : Icons.hourglass_bottom, color: _isReady ? Colors.orange : Colors.grey, size: 12),
+                const SizedBox(width: 4),
+                Text(_isReady ? 'Engine Ready' : 'Loading...',
+                    style: GoogleFonts.prompt(color: _isReady ? Colors.orange : Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
         ],
       ),
       actions: [
-        _buildAppbarButton(Icons.lightbulb_outline, 'AI Hint', const Color(0xFF6B21A8), Colors.white, onPressed: state.toggleHint),
+        _buildAppbarButton(
+          _hintLoading ? Icons.sync : Icons.lightbulb_outline,
+          'AI Hint',
+          const Color(0xFF3B0764),
+          Colors.white,
+          onPressed: _hintLoading ? null : _getAIHint,
+        ),
         const SizedBox(width: 8),
-        _buildAppbarOutlineButton(Icons.science_outlined, 'Run Tests', Colors.indigoAccent, onPressed: () => _runTests(state)),
+        _buildAppbarOutlineButton(
+          _isTesting ? Icons.sync : Icons.science_outlined,
+          _isTesting ? 'Testing...' : 'Run Tests',
+          Colors.blueAccent,
+          onPressed: (_isReady && !_isTesting) ? _runTests : null,
+        ),
         const SizedBox(width: 8),
-    _buildAppbarButton(Icons.play_arrow, 'Execute', Colors.blueGrey.shade800, Colors.greenAccent, onPressed: _isReady ? _execute : null),
+        _buildAppbarButton(
+          _isRunning ? Icons.sync : Icons.play_arrow,
+          _isRunning ? 'Running...' : 'Execute',
+          _isRunning ? Colors.grey.shade800 : const Color(0xFF1E293B),
+          _isRunning ? Colors.grey.shade400 : Colors.white,
+          onPressed: (_isReady && !_isRunning) ? _execute : null,
+        ),
         const SizedBox(width: 8),
-        _buildAppbarButton(Icons.cloud_upload, 'Submit', Colors.blue.shade700, Colors.white, onPressed: () => _submitProject(state)),
+        _buildAppbarButton(Icons.cloud_upload, 'Submit', Colors.blue.shade700, Colors.white, onPressed: _submitProject),
         const SizedBox(width: 16),
       ],
     );
@@ -1401,11 +2051,14 @@ builtins.input = mock_input
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onPressed ?? () {},
+          onTap: onPressed,
           borderRadius: BorderRadius.circular(6),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(6)),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(6),
+            ),
             child: Row(
               children: [
                 Icon(icon, color: textColor, size: 14),
@@ -1420,30 +2073,34 @@ builtins.input = mock_input
   }
 
   Widget _buildAppbarOutlineButton(IconData icon, String label, Color color, {VoidCallback? onPressed}) {
+    final active = onPressed != null;
     return Center(
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(6),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: color),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: color, size: 14),
-              const SizedBox(width: 6),
-              Text(label, style: GoogleFonts.prompt(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
-            ],
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: active ? color : Colors.grey.shade700),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: active ? color : Colors.grey, size: 14),
+                const SizedBox(width: 6),
+                Text(label, style: GoogleFonts.prompt(color: active ? color : Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildLeftSidebar(AppState state) {
+  Widget _buildLeftSidebar() {
     return Container(
       width: 280,
       color: const Color(0xFF0A0F1A),
@@ -1481,11 +2138,11 @@ builtins.input = mock_input
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
-          // AI HINT BOX
-          if (state.showAIHint)
+          if (_hintVisible)
             Container(
+              margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: const Color(0xFF2E1065).withOpacity(0.3),
@@ -1503,16 +2160,24 @@ builtins.input = mock_input
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'โจทย์ต้องการรับชื่อด้วยฟังก์ชัน input() แล้วพิมพ์คำว่า "Hello, [ชื่อ]!" ให้เพิ่มการรับค่าชื่อ เช่น name = input(\'Enter your name: \') และสั่งพิมพ์ print(f"Hello, {name}!")',
-                    style: GoogleFonts.prompt(color: const Color(0xFFE9D5FF), fontSize: 10, height: 1.5),
-                  ),
+                  if (_hintLoading)
+                    Row(
+                      children: [
+                        const SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFC084FC)),
+                        ),
+                        const SizedBox(width: 8),
+                        Text('กำลังวิเคราะห์โค้ด...', style: GoogleFonts.prompt(color: const Color(0xFFE9D5FF), fontSize: 10)),
+                      ],
+                    )
+                  else
+                    Text(_hintText, style: GoogleFonts.prompt(color: const Color(0xFFE9D5FF), fontSize: 10, height: 1.5)),
                 ],
               ),
             ),
-          if (state.showAIHint) const SizedBox(height: 20),
 
-          // TEST CASES
           Text('TEST CASES', style: GoogleFonts.prompt(color: const Color(0xFF475569), fontSize: 10, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Container(
@@ -1525,69 +2190,69 @@ builtins.input = mock_input
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildTestCaseItem(state.test1Passed, 'input "John" → "Hello, John!"'),
+                _buildTestCaseItem(_test1Pass, 'input "John" → "Hello, John!"'),
                 const SizedBox(height: 8),
-                _buildTestCaseItem(state.test2Passed, 'input "สมชาย" → "Hello, สมชาย!"'),
+                _buildTestCaseItem(_test2Pass, 'input "สมชาย" → "Hello, สมชาย!"'),
               ],
             ),
           ),
           const SizedBox(height: 20),
 
-          // PROJECT FILES
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('PROJECT FILES', style: GoogleFonts.prompt(color: const Color(0xFF475569), fontSize: 10, fontWeight: FontWeight.bold)),
-              InkWell(
-                onTap: () => state.addFile('new_script.py'),
-                child: const Icon(Icons.add, color: Color(0xFF475569), size: 14),
-              ),
+              const Icon(Icons.add, color: Color(0xFF475569), size: 14),
             ],
           ),
           const SizedBox(height: 8),
-          ...state.files.keys.map((filename) => InkWell(
-            onTap: () {
-              state.switchFile(filename);
-              _codeController.text = state.files[filename] ?? '';
-            },
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: state.activeFile == filename ? const Color(0xFF1E293B) : Colors.transparent,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.code, color: state.activeFile == filename ? Colors.blueAccent : Colors.grey, size: 14),
-                  const SizedBox(width: 8),
-                  Text(filename, style: GoogleFonts.prompt(color: state.activeFile == filename ? Colors.white : Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
-                ],
-              ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E293B),
+              borderRadius: BorderRadius.circular(6),
             ),
-          )).toList(),
+            child: Row(
+              children: [
+                const Icon(Icons.code, color: Colors.blueAccent, size: 14),
+                const SizedBox(width: 8),
+                Text('main.py', style: GoogleFonts.prompt(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTestCaseItem(bool isPass, String text) {
+  Widget _buildTestCaseItem(bool? state, String text) {
+    IconData icon;
+    Color color;
+    if (state == null) {
+      icon = Icons.radio_button_unchecked;
+      color = const Color(0xFF475569);
+    } else if (state) {
+      icon = Icons.check_circle;
+      color = Colors.green;
+    } else {
+      icon = Icons.cancel;
+      color = Colors.redAccent;
+    }
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(isPass ? Icons.check_circle : Icons.circle_outlined, color: isPass ? Colors.green : Colors.grey, size: 14),
+        Icon(icon, color: color, size: 14),
         const SizedBox(width: 8),
         Expanded(child: Text(text, style: GoogleFonts.prompt(color: const Color(0xFF94A3B8), fontSize: 10))),
       ],
     );
   }
 
-  Widget _buildCodeEditor(AppState state) {
+  Widget _buildCodeEditor() {
     return Container(
       color: const Color(0xFF161B22),
       child: Column(
         children: [
-          // Editor Tab
           Container(
             height: 40,
             color: const Color(0xFF0A0F1A),
@@ -1603,7 +2268,7 @@ builtins.input = mock_input
                     children: [
                       const Icon(Icons.code, color: Colors.blueAccent, size: 14),
                       const SizedBox(width: 8),
-                      Text(state.activeFile, style: GoogleFonts.prompt(color: Colors.white, fontSize: 11)),
+                      Text('main.py', style: GoogleFonts.prompt(color: Colors.white, fontSize: 11)),
                     ],
                   ),
                 ),
@@ -1611,7 +2276,6 @@ builtins.input = mock_input
               ],
             ),
           ),
-          // Editor Area
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1621,7 +2285,11 @@ builtins.input = mock_input
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   color: const Color(0xFF0D1117),
                   child: Column(
-                    children: List.generate(20, (index) => Text('${index + 1}', style: GoogleFonts.jetBrainsMono(color: const Color(0xFF475569), fontSize: 13, height: 1.5))).toList(),
+                    children: List.generate(
+                      20,
+                          (index) => Text('${index + 1}',
+                          style: GoogleFonts.jetBrainsMono(color: const Color(0xFF475569), fontSize: 13, height: 1.5)),
+                    ),
                   ),
                 ),
                 Expanded(
@@ -1629,7 +2297,6 @@ builtins.input = mock_input
                     padding: const EdgeInsets.all(12.0),
                     child: TextField(
                       controller: _codeController,
-                      onChanged: (val) => state.updateActiveFile(val),
                       maxLines: null,
                       expands: true,
                       style: GoogleFonts.jetBrainsMono(color: const Color(0xFFCBD5E1), fontSize: 13, height: 1.5),
@@ -1685,6 +2352,7 @@ builtins.input = mock_input
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               child: SingleChildScrollView(
+                controller: _consoleScrollController,
                 child: Text(
                   _output,
                   style: GoogleFonts.jetBrainsMono(
@@ -1694,6 +2362,36 @@ builtins.input = mock_input
                   ),
                 ),
               ),
+            ),
+          ),
+          Container(
+            height: 40,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: Color(0xFF1E293B))),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.chevron_right, color: Color(0xFF10B981), size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _consoleInputController,
+                    style: GoogleFonts.jetBrainsMono(color: Colors.white, fontSize: 12),
+                    decoration: InputDecoration(
+                      hintText: 'Type here...',
+                      hintStyle: GoogleFonts.jetBrainsMono(color: const Color(0xFF475569), fontSize: 12),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    onSubmitted: (value) {
+                      _appendOutput('\n$value');
+                      _consoleInputController.clear();
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ],
