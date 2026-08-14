@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+  <title>AI Career Mentor</title>
   
   <!-- ดึง Google Font: Prompt สำหรับภาษาไทย และ Hanken Grotesk สำหรับภาษาอังกฤษ -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -10,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
   
-  <!-- ไลบรารี Marked สำหรับแปลงข้อความ AI (Markdown เช่น ###, **ตัวหนา**) ให้สวยงาม -->
+  <!-- ไลบรารี Marked สำหรับแปลงข้อความ AI (Markdown) -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -50,7 +51,7 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
-    /* จัดแต่งรูปแบบ Markdown ให้ข้อความที่ตอบกลับมาสวยงาม */
+    /* จัดแต่งรูปแบบ Markdown */
     .prose-custom h3 {
       font-weight: 700;
       color: #0d1b3e;
@@ -119,24 +120,20 @@
 
   <!-- Bottom Input Area -->
   <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-surface-container-lowest p-3 pt-2 pb-4 shadow-[0_-4px_24px_rgba(13,27,62,0.08)] z-20">
-<!-- Quick Prompts (เลื่อนสไลด์ซ้าย-ขวาได้) -->
+    <!-- Quick Prompts -->
     <div class="flex overflow-x-auto gap-2 pb-2 mb-1 no-scrollbar active:cursor-grabbing select-none" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
       <button onclick="sendQuickPrompt('เด็กจบใหม่ไม่มีประสบการณ์ ควรเริ่มเตรียมพอร์ตโฟลิโออย่างไรให้เตะตากรรมการ')" class="flex-shrink-0 text-xs text-[#00995d] bg-[#f0fdf4] px-3.5 py-2 rounded-full border border-[#00C076] hover:bg-[#00C076] hover:text-white transition-colors whitespace-nowrap shadow-sm">
         เตรียมพอร์ตยังไงให้ได้งานแรก
       </button>
-
       <button onclick="sendQuickPrompt('อยากเริ่มทำงานสาย IT แต่ไม่ได้จบตรงสาย ต้องวางแผนและเริ่มเรียนรู้จากอะไรก่อน')" class="flex-shrink-0 text-xs text-[#00995d] bg-[#f0fdf4] px-3.5 py-2 rounded-full border border-[#00C076] hover:bg-[#00C076] hover:text-white transition-colors whitespace-nowrap shadow-sm">
         ไม่ได้จบตรงสายเริ่มยังไง
       </button>
-
       <button onclick="sendQuickPrompt('ช่วยจำลองคำถามสัมภาษณ์งานตำแหน่ง Junior Developer และแนวทางการตอบให้หน่อย')" class="flex-shrink-0 text-xs text-[#00995d] bg-[#f0fdf4] px-3.5 py-2 rounded-full border border-[#00C076] hover:bg-[#00C076] hover:text-white transition-colors whitespace-nowrap shadow-sm">
         จำลองสัมภาษณ์งานตำแหน่ง Junior
       </button>
-
       <button onclick="sendQuickPrompt('ทักษะหรือสกิลที่ตลาดแรงงาน IT ต้องการมากที่สุดตอนนี้มีอะไรบ้าง')" class="flex-shrink-0 text-xs text-[#00995d] bg-[#f0fdf4] px-3.5 py-2 rounded-full border border-[#00C076] hover:bg-[#00C076] hover:text-white transition-colors whitespace-nowrap shadow-sm">
         ทักษะที่ตลาดต้องการมากที่สุด
       </button>
-
       <button onclick="sendQuickPrompt('ฐานเงินเดือนเริ่มต้นของสายงาน IT แต่ละสายงานอยู่ที่ประมาณเท่าไหร่')" class="flex-shrink-0 text-xs text-[#00995d] bg-[#f0fdf4] px-3.5 py-2 rounded-full border border-[#00C076] hover:bg-[#00C076] hover:text-white transition-colors whitespace-nowrap shadow-sm">
         ฐานเงินเดือนเริ่มต้นแต่ละสาย
       </button>
@@ -156,7 +153,8 @@
 </main>
 
 <script>
-  const API_URL = "https://heavy-buses-accept.loca.lt/api/mentor";
+  // ลิงก์ LocalTunnel สำหรับแชร์ให้เพื่อนใช้งาน
+  const API_URL = "https://open-garlics-poke.loca.lt/api/mentor";
   const AVATAR_URL = "https://lh3.googleusercontent.com/aida-public/AB6AXuCTwR-ld26Szf1gyYX2otWHXDwFHmsE8-f9wu2Ob5lCAhe189W348v2IkFsdtnYAWfHwZ7uvi5hSvhh4aGP0p4Ug17h_lbdhA-yRJhR9oGt8K3vL_AgfzX41QihGRm--5vxfvh2Rg-gpoF7ZJFpvy82iqwifWIhVT56AXr0jbQnf7nXQi7yq2UTXRALyVm-hTDBsyxFJTifULVY26vXSkcm4xxh0Ith76GWLZnscua1uAOLkc01QIWl";
 
   const chatContainer = document.getElementById('chat-container');
@@ -182,7 +180,7 @@
     const message = userInput.value.trim();
     if (!message) return;
 
-    // 1. กล่องข้อความฝั่ง User
+    // 1. แสดงกล่องข้อความผู้ใช้
     const userBubble = `
       <div class="flex gap-3 max-w-[85%] self-end animate-[slideInRight_0.3s_ease-out]">
         <div class="bg-[#0D1B3E] p-3 rounded-2xl rounded-tr-none shadow-md">
@@ -194,7 +192,7 @@
     userInput.value = '';
     scrollToBottom();
 
-    // 2. แสดงสถานะกำลังคิด (Typing Indicator)
+    // 2. แสดงสถานะกำลังคิด
     const typingId = "typing-" + Date.now();
     const typingBubble = `
       <div id="${typingId}" class="flex gap-3 max-w-[85%] self-start animate-[slideInLeft_0.3s_ease-out]">
@@ -209,25 +207,23 @@
     chatContainer.insertAdjacentHTML('beforeend', typingBubble);
     scrollToBottom();
 
-    // 3. ยิงไปหา Backend
+    // 3. ส่งข้อมูลไปที่ Backend ผ่าน LocalTunnel
     try {
-      // แก้ตรงคำสั่ง fetch ในไฟล์ index.html
       const response = await fetch(API_URL, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "Bypass-Tunnel-Reminder": "true"  // <-- เพิ่มบรรทัดนี้เพื่อทะลุผ่าน LocalTunnel ทันที
+          "Bypass-Tunnel-Reminder": "true" // ข้ามหน้าแจ้งเตือนของ LocalTunnel
         },
         body: JSON.stringify({ message: message })
       });
-      const data = await response.json();
 
+      const data = await response.json();
       document.getElementById(typingId)?.remove();
 
-      // แปลง Markdown ให้กลายเป็น HTML ตัวหนา/หัวข้อสวยๆ
       const formattedHtml = marked.parse(data.reply);
 
-      // แสดงข้อความตอบกลับจาก AI
+      // แสดงคำตอบจาก AI
       const aiBubble = `
         <div class="flex gap-3 max-w-[85%] self-start animate-[slideInLeft_0.3s_ease-out]">
           <img alt="AI" class="w-8 h-8 rounded-full flex-shrink-0 mt-1 object-cover" src="${AVATAR_URL}"/>
