@@ -47,21 +47,9 @@
       to { opacity: 1; transform: translateX(0) translateY(0); }
     }
     
-    /* สไตล์แท็บบาร์เลื่อนซ้าย-ขวา (Horizontal Scrollbar) */
-    .custom-scrollbar::-webkit-scrollbar {
-      height: 4px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: #e2e8f0;
-      border-radius: 9999px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #00C076;
-      border-radius: 9999px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #008751;
-    }
+    /* ซ่อน Scrollbar ทุกแพลตฟอร์ม */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
     .prose-custom h3 {
       font-weight: 700;
@@ -132,8 +120,8 @@
   <!-- Bottom Input Area -->
   <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-surface-container-lowest p-3 pt-2 pb-4 shadow-[0_-4px_24px_rgba(13,27,62,0.08)] z-20">
     
-    <!-- Quick Prompts มีแถบ Scrollbar ด้านล่างเห็นชัดเจน -->
-    <div id="quick-prompts-bar" class="flex overflow-x-auto gap-2 pb-2.5 mb-1.5 custom-scrollbar cursor-grab active:cursor-grabbing select-none" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
+    <!-- Quick Prompts (เลื่อนซ้าย-ขวาได้ ไม่มีแท็บบาร์กวนสายตา) -->
+    <div id="quick-prompts-bar" class="flex overflow-x-auto gap-2 pb-2 mb-2 no-scrollbar cursor-grab active:cursor-grabbing select-none" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
       <button onclick="sendQuickPrompt('ไม่มีประสบการณ์ทำงาน ควรจัดทำพอร์ตโฟลิโออย่างไรให้โดดเด่นและน่าสนใจ')" class="flex-shrink-0 text-xs font-medium text-[#008751] bg-[#f0fdf4] px-3.5 py-2 rounded-full border border-[#00C076] hover:bg-[#00C076] hover:text-white transition-colors whitespace-nowrap shadow-sm">
         ไม่มีประสบการณ์ทำพอร์ตอย่างไร
       </button>
@@ -240,7 +228,7 @@
       scrollToElement(userElement);
     }
 
-    // แสดงกำลังคิด
+    // แสดงสถานะกำลังพิมพ์
     const typingId = "typing-" + Date.now();
     const typingBubble = `
       <div id="${typingId}" class="flex gap-3 max-w-[85%] self-start animate-[slideInLeft_0.3s_ease-out]">
