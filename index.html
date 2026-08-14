@@ -46,9 +46,23 @@
       from { opacity: 0; transform: translateX(10px) translateY(10px); }
       to { opacity: 1; transform: translateX(0) translateY(0); }
     }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
+    /* สไตล์แท็บบาร์เลื่อนซ้าย-ขวา (Horizontal Scrollbar) */
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #e2e8f0;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #00C076;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #008751;
+    }
+
     .prose-custom h3 {
       font-weight: 700;
       color: #0d1b3e;
@@ -118,8 +132,8 @@
   <!-- Bottom Input Area -->
   <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-surface-container-lowest p-3 pt-2 pb-4 shadow-[0_-4px_24px_rgba(13,27,62,0.08)] z-20">
     
-    <!-- Quick Prompts เลื่อนซ้ายขวาได้ -->
-    <div id="quick-prompts-bar" class="flex overflow-x-auto gap-2 pb-2 mb-1 no-scrollbar cursor-grab active:cursor-grabbing select-none" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
+    <!-- Quick Prompts มีแถบ Scrollbar ด้านล่างเห็นชัดเจน -->
+    <div id="quick-prompts-bar" class="flex overflow-x-auto gap-2 pb-2.5 mb-1.5 custom-scrollbar cursor-grab active:cursor-grabbing select-none" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
       <button onclick="sendQuickPrompt('ไม่มีประสบการณ์ทำงาน ควรจัดทำพอร์ตโฟลิโออย่างไรให้โดดเด่นและน่าสนใจ')" class="flex-shrink-0 text-xs font-medium text-[#008751] bg-[#f0fdf4] px-3.5 py-2 rounded-full border border-[#00C076] hover:bg-[#00C076] hover:text-white transition-colors whitespace-nowrap shadow-sm">
         ไม่มีประสบการณ์ทำพอร์ตอย่างไร
       </button>
@@ -157,7 +171,7 @@
   const chatContainer = document.getElementById('chat-container');
   const userInput = document.getElementById('user-input');
 
-  // Drag to Scroll สำหรับ Quick Prompts
+  // Drag to Scroll สำหรับแถบคำถามยอดนิยม
   const slider = document.getElementById('quick-prompts-bar');
   let isDown = false;
   let startX;
@@ -178,14 +192,12 @@
     slider.scrollLeft = scrollLeft - walk;
   });
 
-  // ฟังก์ชันเลื่อนหน้าจอไปยัง Element ที่ต้องการทันที
   function scrollToElement(element) {
     setTimeout(() => {
       element.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }, 50);
   }
 
-  // ฟังก์ชันเลื่อนจอลงล่างสุด
   function scrollToBottom() {
     setTimeout(() => {
       chatContainer.scrollTo({
@@ -211,7 +223,7 @@
     const message = userInput.value.trim();
     if (!message) return;
 
-    // 1. สร้างกล่องข้อความผู้ใช้พร้อม ID สำหรับติดตามตำแหน่ง
+    // แสดงข้อความ User และเลื่อนจอลงมาหาทันที
     const userMsgId = "user-msg-" + Date.now();
     const userBubble = `
       <div id="${userMsgId}" class="flex gap-3 max-w-[85%] self-end animate-[slideInRight_0.3s_ease-out]">
@@ -223,13 +235,12 @@
     chatContainer.insertAdjacentHTML('beforeend', userBubble);
     userInput.value = '';
 
-    // เลื่อนหน้าจอลงมาหาข้อความที่เราเพิ่งพิมพ์เสร็จทันที
     const userElement = document.getElementById(userMsgId);
     if (userElement) {
       scrollToElement(userElement);
     }
 
-    // 2. แสดง Animation กำลังพิมพ์
+    // แสดงกำลังคิด
     const typingId = "typing-" + Date.now();
     const typingBubble = `
       <div id="${typingId}" class="flex gap-3 max-w-[85%] self-start animate-[slideInLeft_0.3s_ease-out]">
@@ -243,7 +254,6 @@
     `;
     chatContainer.insertAdjacentHTML('beforeend', typingBubble);
 
-    // 3. ยิงคำขอไปที่ Backend
     try {
       const response = await fetch(API_URL, {
         method: "POST",
@@ -260,7 +270,7 @@
       const replyText = data.reply || data.message || "ไม่มีข้อมูลตอบกลับ";
       const formattedHtml = marked.parse(replyText);
 
-      // แสดงคำตอบ AI
+      // แสดงคำตอบ AI และเลื่อนลงมาแสดงผล
       const aiBubbleId = "ai-msg-" + Date.now();
       const aiBubble = `
         <div id="${aiBubbleId}" class="flex gap-3 max-w-[85%] self-start animate-[slideInLeft_0.3s_ease-out]">
@@ -272,7 +282,6 @@
       `;
       chatContainer.insertAdjacentHTML('beforeend', aiBubble);
       
-      // เลื่อนจอลงมาแสดงคำตอบ AI ล่างสุด
       const aiElement = document.getElementById(aiBubbleId);
       if (aiElement) {
         scrollToElement(aiElement);
