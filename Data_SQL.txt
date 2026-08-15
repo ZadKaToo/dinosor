@@ -1,315 +1,102 @@
--- ========================================================
--- 1. เพิ่มข้อมูล Master Tags (คลังทักษะกลาง)
--- ========================================================
-INSERT INTO skills_tags (id, name, category) VALUES
-(1, 'SQL', 'Data & AI'),
-(2, 'Power BI', 'Data & AI'),
-(3, 'Excel Advanced', 'Data & AI'),
-(4, 'Data Cleaning', 'Data & AI'),
-(5, 'JavaScript ES6', 'Software & Web Development'),
-(6, 'React.js', 'Software & Web Development'),
-(7, 'Tailwind CSS', 'Software & Web Development'),
-(8, 'RESTful API', 'Software & Web Development'),
-(9, 'Node.js', 'Software & Web Development'),
-(10, 'Express', 'Software & Web Development'),
-(11, 'MySQL', 'Database'),
-(12, 'MongoDB', 'Database'),
-(13, 'Docker', 'DevOps & Cloud'),
-(14, 'Google Ads', 'Digital Marketing'),
-(15, 'Meta Ads', 'Digital Marketing'),
-(16, 'Google Analytics 4', 'Digital Marketing'),
-(17, 'SEO', 'Digital Marketing'),
-(18, 'TikTok Shop Operations', 'E-Commerce'),
-(19, 'Shopee/Lazada Center', 'E-Commerce'),
-(20, 'Live Streaming Management', 'E-Commerce'),
-(21, 'Canva', 'Design & Creative'),
-(22, 'Figma', 'Design & Creative'),
-(23, 'Design Systems', 'Design & Creative'),
-(24, 'User Research', 'Design & Creative'),
-(25, 'Wireframing', 'Design & Creative'),
-(26, 'ChatGPT / Claude Prompting', 'Data & AI'),
-(27, 'Midjourney', 'Design & Creative'),
-(28, 'AI Copywriting', 'Digital Marketing'),
-(29, 'Workflow Automation', 'Productivity'),
-(30, 'Linux Basics', 'Cloud & Infrastructure'),
-(31, 'AWS Cloud Practitioner', 'Cloud & Infrastructure'),
-(32, 'Network Troubleshooting', 'IT Support'),
-(33, 'Windows Server', 'IT Support'),
-(34, 'Business Process Modeling', 'Business & Strategy'),
-(35, 'SQL Basics', 'Data & AI'),
-(36, 'UML Diagrams', 'Software & Web Development'),
-(37, 'Data Visualization', 'Data & AI'),
-(38, 'Network Security', 'Cybersecurity'),
-(39, 'SOC Monitoring', 'Cybersecurity'),
-(40, 'Wireshark', 'Cybersecurity'),
-(41, 'Vulnerability Scanning', 'Cybersecurity'),
-(42, 'Flutter', 'Mobile Development'),
-(43, 'Dart', 'Mobile Development'),
-(44, 'Firebase Integration', 'Mobile Development'),
-(45, 'Inventory Management', 'Logistics'),
-(46, 'Excel VBA/Macro', 'Data & Operations'),
-(47, 'SAP ERP', 'Enterprise Systems'),
-(48, 'Route Optimization', 'Logistics'),
-(49, 'HubSpot / Salesforce', 'CRM & Marketing'),
-(50, 'Line OA API', 'CRM & Marketing'),
-(51, 'Email Automation', 'Digital Marketing'),
-(52, 'Customer Segmentation', 'Digital Marketing'),
-(53, 'Cypress', 'QA & Testing'),
-(54, 'Selenium', 'QA & Testing'),
-(55, 'Postman API Testing', 'QA & Testing'),
-(56, 'Test Case Writing', 'QA & Testing'),
-(57, 'IoT Sensor Setup', 'AgriTech & IoT'),
-(58, 'Drone Flight Operation', 'AgriTech & IoT'),
-(59, 'Data Logging', 'AgriTech & IoT'),
-(60, 'Greenhouse Automation', 'AgriTech & IoT');
+-- ===================================================================
+-- 1. ตารางข้อมูลหลัก (Master / Entity Tables)
+-- ===================================================================
 
--- อัปเดต Sequence ID ของ skills_tags
-SELECT setval('skills_tags_id_seq', (SELECT MAX(id) FROM skills_tags));
+-- 1.1 ตารางผู้ใช้งาน (Users)
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    target_career VARCHAR(100), -- อาชีพเป้าหมายที่ระบุ
+    role VARCHAR(20) DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- ========================================================
--- 2. เพิ่มข้อมูล User Guides (คู่มือและเทคนิคการทำงาน)
--- ========================================================
-INSERT INTO user_guides (id, title, summary, content, category, reading_time_mins, views_count) VALUES
-(1, '5 เทคนิคตอบคำถามสัมภาษณ์งานสาย Data ให้โดนใจ Tech Lead', 'สรุปวิธีตอบแบบ STAR Framework สำหรับการเล่าโปรเจกต์ SQL และวิธีอธิบาย Insight ที่สร้าง Value ให้ธุรกิจ', 'เนื้อหาฉบับเต็ม: 1. เล่า Situation ให้กระชับ 2. ระบุ Task ให้ชัดเจน 3. อธิบาย Action เชิงเทคนิค 4. สรุป Result เป็นตัวเลขมูลค่าธุรกิจ', 'เทคนิคสัมภาษณ์งาน', 4, 1420),
-(2, 'วิธีเขียน Resume ฉบับ 1 หน้า ให้ผ่านระบบสแกน ATS ปี 2026', 'เจาะลึก Keyword สำคัญที่ HR และ AI กำลังค้นหา พร้อมฟอร์แมตมาตรฐานที่อ่านง่ายไม่ตกหล่น', 'เนื้อหาฉบับเต็ม: ใช้ฟอนต์มาตรฐาน ไม่ใส่ตารางซับซ้อน ใส่ทักษะและผลงานที่สอดคล้องกับ Job Description', 'การเขียนเรซูเม่', 6, 2350),
-(3, 'Roadmap ย้ายสายงานสู่ Web Developer ใน 6 เดือนด้วยตัวเอง', 'เช็กลิสต์ทักษะตั้งแต่ HTML/CSS, JavaScript, Git, จนถึงการทำ Full-Stack Deployment', 'เนื้อหาฉบับเต็ม: เดือนที่ 1-2 พื้นฐานเว็บ, เดือนที่ 3-4 เฟรมเวิร์กยอดนิยม, เดือนที่ 5-6 ทำโปรเจกต์จริงลง GitHub', 'วางแผนเส้นทางอาชีพ', 8, 3890),
-(4, 'ยกระดับการทำงานประจำวันด้วย AI Prompt 10 รูปแบบที่ใช้ได้ทันที', 'รวม Template สรุปรายงาน ร่างอีเมลภาษาอังกฤษ และการวิเคราะห์ข้อความอัตโนมัติ', 'เนื้อหาฉบับเต็ม: เทคนิค Few-Shot Prompting และการกำหนด Role Persona เพื่อให้ได้คำตอบระดับมือโปร', 'ทักษะจำเป็นยุคดิจิทัล', 5, 1820),
-(5, 'เทคนิคต่อรองเงินเดือนเมื่อเปลี่ยนสายงานอย่างมั่นใจและสมเหตุสมผล', 'วิธีใช้หลักฐานผลงาน Portfolio และ Skill Passport มาเป็นฐานในการประเมินมูลค่าทักษะตนเอง', 'เนื้อหาฉบับเต็ม: ประเมินฐานเงินเดือนตลาด และนำเสนอผลงานจริงเพื่อชี้แจงความพร้อมในการทำงานทันที', 'การเงินและสิทธิประโยชน์', 5, 2100);
+-- 1.2 ตารางคอร์สเรียน (Courses)
+CREATE TABLE courses (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(150) NOT NULL,
+    description TEXT,
+    thumbnail_url VARCHAR(255),
+    price DECIMAL(10, 2) DEFAULT 0.00,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-SELECT setval('user_guides_id_seq', (SELECT MAX(id) FROM user_guides));
+-- 1.3 ตารางบริษัท (Companies)
+CREATE TABLE companies (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    logo_url VARCHAR(255),
+    description TEXT,
+    location VARCHAR(150),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- ========================================================
--- 3. เพิ่มข้อมูล Jobs (ตำแหน่งงานและฐานเงินเดือน)
--- ========================================================
-INSERT INTO jobs (id, title, company, location, salary_min, salary_max, category, experience, missing_skill_recommendation) VALUES
-('JOB001', 'Junior Data Analyst', 'TechVanguard Solutions', 'กรุงเทพฯ (BTS อโศก / Hybrid)', 32000, 45000, 'Data & AI', '0-2 ปี', 'Power BI Dashboard & DAX'),
-('JOB002', 'Frontend React Developer', 'Siam Innovate Lab', 'กรุงเทพฯ (สาทร / Hybrid)', 35000, 50000, 'Software & Web Development', '1-3 ปี', 'React State Management (Redux/Zustand)'),
-('JOB003', 'Junior Backend Developer (Node.js)', 'NextGen FinTech Thailand', 'กรุงเทพฯ (สีลม / Remote 100%)', 35000, 55000, 'Software & Web Development', '0-2 ปี', 'Database Optimization & Docker'),
-('JOB004', 'Digital Performance Marketer', 'Bangkok Growth Agency', 'กรุงเทพฯ (พระราม 9)', 28000, 42000, 'Digital Marketing', '1-2 ปี', 'GA4 Data Tracking & Conversion Optimization'),
-('JOB005', 'E-commerce & TikTok Shop Specialist', 'Thai Retail Omnichannel', 'กรุงเทพฯ (บางนา)', 25000, 38000, 'E-Commerce', '0-2 ปี', 'TikTok Ads & Livestream Engagement Strategy'),
-('JOB006', 'UX/UI Designer (Junior)', 'Creative Wave Studio', 'กรุงเทพฯ (อารีย์ / Hybrid)', 30000, 45000, 'Design & Creative', '0-2 ปี', 'Figma Auto-Layout & Interactive Prototyping'),
-('JOB007', 'AI Prompt Engineer & Content Creator', 'FutureMedia Hub', 'เชียงใหม่ (Nimman / Remote)', 28000, 40000, 'Data & AI', '0-1 ปี', 'Advanced Prompt Chaining & Zapier Integration'),
-('JOB008', 'IT Support & Cloud Operations Junior', 'Metro Cloud Services', 'กรุงเทพฯ (ห้วยขวาง)', 24000, 35000, 'Cloud & Infrastructure', '0-2 ปี', 'AWS Core Services & Security Best Practices'),
-('JOB009', 'Junior Business Analyst', 'Consulting Plus Partners', 'กรุงเทพฯ (เพลินจิต)', 35000, 52000, 'Business & Strategy', '1-3 ปี', 'Agile Scrum Master & Jira Workflow'),
-('JOB010', 'Cybersecurity Operations Junior', 'SecureNet Thailand', 'กรุงเทพฯ (พญาไท)', 32000, 48000, 'Cybersecurity', '0-2 ปี', 'SOC Analyst Triage & Log Analysis'),
-('JOB011', 'Flutter Mobile Developer', 'AppCraft Mobile Lab', 'ขอนแก่น (กังสดาล / Hybrid)', 30000, 45000, 'Software & Web Development', '0-2 ปี', 'State Management with Bloc/Riverpod'),
-('JOB012', 'Logistics & Supply Chain Data Officer', 'Siam Express Cargo', 'สมุทรปราการ (บางพลี)', 25000, 36000, 'Logistics & Operations', '1-2 ปี', 'Excel Power Query & Warehouse Dashboard'),
-('JOB013', 'CRM & Customer Retention Executive', 'OmniHealth Corporation', 'กรุงเทพฯ (เอกมัย)', 28000, 40000, 'Digital Marketing', '1-3 ปี', 'Line OA Rich Menu & Chatbot Automation'),
-('JOB014', 'Junior QA Automation Engineer', 'QualitySoft Solutions', 'กรุงเทพฯ (ทองหล่อ / Remote)', 32000, 48000, 'Software & Web Development', '0-2 ปี', 'Automated End-to-End Testing with Cypress'),
-('JOB015', 'Modern Agriculture Tech Operator', 'SmartAgri Isan Tech', 'นครราชสีมา (ปากช่อง)', 22000, 32000, 'AgriTech & Manufacturing', '0-1 ปี', 'Smart Farm IoT Monitoring Dashboard');
+-- 1.4 ตารางทักษะ/ความสามารถ (Skills)
+CREATE TABLE skills (
+    id SERIAL PRIMARY KEY,
+    skill_name VARCHAR(100) UNIQUE NOT NULL,
+    category VARCHAR(50) -- เช่น 'Hard Skill', 'Soft Skill', 'Language'
+);
 
--- ========================================================
--- 4. จับคู่ทักษะที่แต่ละงานต้องการ (Job Skills)
--- ========================================================
-INSERT INTO job_skills (job_id, skill_id) VALUES
-('JOB001', 1), ('JOB001', 2), ('JOB001', 3), ('JOB001', 4),
-('JOB002', 5), ('JOB002', 6), ('JOB002', 7), ('JOB002', 8),
-('JOB003', 9), ('JOB003', 10), ('JOB003', 11), ('JOB003', 12), ('JOB003', 13),
-('JOB004', 14), ('JOB004', 15), ('JOB004', 16), ('JOB004', 17),
-('JOB005', 18), ('JOB005', 19), ('JOB005', 20), ('JOB005', 21),
-('JOB006', 22), ('JOB006', 23), ('JOB006', 24), ('JOB006', 25),
-('JOB007', 26), ('JOB007', 27), ('JOB007', 28), ('JOB007', 29),
-('JOB008', 30), ('JOB008', 31), ('JOB008', 32), ('JOB008', 33),
-('JOB009', 34), ('JOB009', 35), ('JOB009', 36), ('JOB009', 37),
-('JOB010', 38), ('JOB010', 39), ('JOB010', 40), ('JOB010', 41),
-('JOB011', 42), ('JOB011', 43), ('JOB011', 8), ('JOB011', 44),
-('JOB012', 45), ('JOB012', 46), ('JOB012', 47), ('JOB012', 48),
-('JOB013', 49), ('JOB013', 50), ('JOB013', 51), ('JOB013', 52),
-('JOB014', 53), ('JOB014', 54), ('JOB014', 55), ('JOB014', 56),
-('JOB015', 57), ('JOB015', 58), ('JOB015', 59), ('JOB015', 60);
+-- 1.5 ตารางประกาศงาน (Jobs)
+CREATE TABLE jobs (
+    id SERIAL PRIMARY KEY,
+    company_id INT REFERENCES companies(id) ON DELETE CASCADE,
+    title VARCHAR(150) NOT NULL,
+    description TEXT,
+    min_salary DECIMAL(10, 2),
+    max_salary DECIMAL(10, 2),
+    is_high_income BOOLEAN DEFAULT FALSE, -- ธงระบุว่าเป็นอาชีพรายได้สูงสำหรับนำไปจัดอันดับหน้าแรก
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- ========================================================
--- 5. เพิ่มข้อมูลคอร์สเรียน (Courses)
--- ========================================================
-INSERT INTO courses (id, title, category, summary, cover_image_url, duration_text, difficulty_level, rating, instructor, badge_earned, total_lessons, like_count, share_count) VALUES
-('CRS001', 'SQL สำหรับการวิเคราะห์ข้อมูลธุรกิจเบื้องต้น', 'Data & AI', 'ปูพื้นฐานการเขียน Query เพื่อดึง Insight ยอดขายและพฤติกรรมลูกค้าสำหรับธุรกิจจริง', 'https://assets.skillup.in.th/courses/sql-basics.png', '4 ชั่วโมง 30 นาที', 'ผู้เริ่มต้น', 4.90, 'ดร. อานนท์ วิจัยข้อมูล', 'SQL Certified Specialist', 5, 340, 52),
-('CRS002', 'Power BI Masterclass: สร้าง Interactive Dashboard จากศูนย์', 'Data & AI', 'เรียนรู้การทำ Data Modeling, ฟังก์ชัน DAX และออกแบบ Dashboard รายงานผู้บริหาร', 'https://assets.skillup.in.th/courses/powerbi-master.png', '6 ชั่วโมง', 'ระดับกลาง', 4.80, 'สมิทธิ์ ดาต้าวิซาร์ด', 'Power BI Pro', 6, 280, 41),
-('CRS003', 'React.js & Tailwind CSS: สร้าง Web App ยุคใหม่', 'Software & Web Development', 'สร้างเว็บแอปพลิเคชันที่รองรับ Responsive Design พร้อมจัดการ State อย่างมือโปร', 'https://assets.skillup.in.th/courses/react-tailwind.png', '8 ชั่วโมง 15 นาที', 'ผู้เริ่มต้น-ระดับกลาง', 4.95, 'กานต์ ฟรอนต์เอนด์เดฟ', 'React Developer Badge', 8, 510, 89),
-('CRS004', 'Node.js & MongoDB API Development สำหรับระบบจริง', 'Software & Web Development', 'ออกแบบ REST API ที่ปลอดภัย เชื่อมต่อฐานข้อมูล NoSQL และพร้อม Deploy', 'https://assets.skillup.in.th/courses/nodejs-mongo.png', '7 ชั่วโมง', 'ระดับกลาง', 4.70, 'วิทวัส แบ็กเอนด์คราฟต์', 'Backend Node.js Certified', 7, 195, 23),
-('CRS005', 'Generative AI เพื่อเพิ่มประสิทธิภาพการทำงานแบบมือโปร', 'Digital Skills & AI', 'ใช้ ChatGPT, Claude และ AI Tools เพิ่มความเร็วในการทำงานประจำวัน 10 เท่า', 'https://assets.skillup.in.th/courses/gen-ai-work.png', '3 ชั่วโมง 45 นาที', 'ผู้เริ่มต้น', 4.90, 'พิมลภัส AI สตูดิโอ', 'AI Workplace Champion', 4, 620, 115),
-('CRS006', 'Figma UI/UX Design System จากทฤษฎีสู่การส่งมอบงาน Dev', 'Design & Creative', 'วางระบบ Auto-Layout, Components และทำ Interactive Prototype ส่งต่อทีมพัฒนา', 'https://assets.skillup.in.th/courses/figma-ui.png', '5 ชั่วโมง 30 นาที', 'ผู้เริ่มต้น', 4.85, 'ณัชชา ดีไซน์สเกล', 'Figma UI Certified', 5, 412, 67),
-('CRS007', 'Google Analytics 4 & Performance Marketing ปั้นยอดขาย', 'Digital Marketing', 'วัดผลแคมเปญโฆษณา ทำ Conversion Tracking และวิเคราะห์ Customer Journey', 'https://assets.skillup.in.th/courses/ga4-marketing.png', '5 ชั่วโมง', 'ระดับกลาง', 4.65, 'เอกชัย การตลาดดิจิทัล', 'Growth Marketer Badge', 5, 178, 30),
-('CRS008', 'TikTok Shop & Social Commerce: เทคนิคปิดการขายหลักแสน', 'E-Commerce', 'จัดการหลังบ้าน TikTok Shop ยิงแอดหานายหน้า และเทคนิคไลฟ์สดดึงดูดคนดู', 'https://assets.skillup.in.th/courses/tiktok-shop.png', '4 ชั่วโมง', 'ผู้เริ่มต้น', 4.75, 'ภัทรวดี แม่ค้าออนไลน์ร้อยล้าน', 'TikTok Commerce Pro', 4, 305, 48),
-('CRS009', 'AWS Cloud Foundations: ปูพื้นฐานสู่ระบบคลาวด์สำหรับมือใหม่', 'Cloud & Infrastructure', 'เข้าใจบริการหลัก EC2, S3, RDS, IAM และการจัดการต้นทุนคลาวด์', 'https://assets.skillup.in.th/courses/aws-cloud.png', '6 ชั่วโมง 30 นาที', 'ผู้เริ่มต้น', 4.80, 'ธีรภัทร คลาวด์อาร์คิเทกต์', 'AWS Cloud Ready', 6, 230, 35),
-('CRS010', 'Cypress Automated Testing: เขียน Test อย่างมืออาชีพ', 'Software & Web Development', 'ลดบั๊กในระบบด้วยการทำ Automated End-to-End Testing แบบเข้าใจง่าย', 'https://assets.skillup.in.th/courses/cypress-test.png', '4 ชั่วโมง 45 นาที', 'ระดับกลาง', 4.90, 'สิรภพ ซอฟต์แวร์เทสเตอร์', 'QA Automation Specialist', 5, 142, 19);
+-- ===================================================================
+-- 2. ตารางเชื่อมโยงความสัมพันธ์ และประวัติ (Mapping & History Tables)
+-- ===================================================================
 
--- ========================================================
--- 6. ผูกทักษะที่ได้จากคอร์ส (Course Skills)
--- ========================================================
-INSERT INTO course_skills (course_id, skill_id) VALUES
-('CRS001', 1), ('CRS001', 4), ('CRS001', 35),
-('CRS002', 2), ('CRS002', 37),
-('CRS003', 5), ('CRS003', 6), ('CRS003', 7),
-('CRS004', 9), ('CRS004', 10), ('CRS004', 12),
-('CRS005', 26), ('CRS005', 28), ('CRS005', 29),
-('CRS006', 22), ('CRS006', 23), ('CRS006', 25),
-('CRS007', 14), ('CRS007', 16),
-('CRS008', 18), ('CRS008', 20),
-('CRS009', 30), ('CRS009', 31),
-('CRS010', 53), ('CRS010', 55), ('CRS010', 56);
+-- 2.1 ตารางประวัติการเรียนของผู้ใช้ (User Courses)
+CREATE TABLE user_courses (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    course_id INT REFERENCES courses(id) ON DELETE CASCADE,
+    progress_percent INT DEFAULT 0 CHECK (progress_percent BETWEEN 0 AND 100),
+    status VARCHAR(20) DEFAULT 'enrolled' CHECK (status IN ('enrolled', 'completed', 'dropped')),
+    enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
+    UNIQUE(user_id, course_id)
+);
 
--- ========================================================
--- 7. เพิ่มบทเรียนย่อย (Course Lessons)
--- ========================================================
-INSERT INTO course_lessons (id, course_id, title, content, order_index, estimated_read_time_mins) VALUES
-('a0000001-0000-0000-0000-000000000001', 'CRS001', 'บทที่ 1: รู้จักคำสั่ง SELECT และ WHERE', 'SELECT ใช้เลือกคอลัมน์ ส่วน WHERE ใช้กรองเงื่อนไขของข้อมูลที่ต้องการ', 1, 5),
-('a0000001-0000-0000-0000-000000000002', 'CRS001', 'บทที่ 2: การจัดเรียงและตัดข้อมูลด้วย ORDER BY, LIMIT', 'การจัดลำดับข้อมูลจากมากไปน้อย (DESC) หรือน้อยไปมาก (ASC)', 2, 5),
-('a0000001-0000-0000-0000-000000000003', 'CRS001', 'บทที่ 3: รวมกลุ่มข้อมูลด้วย GROUP BY และ HAVING', 'การใช้ฟังก์ชัน SUM, AVG, COUNT ร่วมกับการจัดกลุ่มข้อมูล', 3, 6),
-('a0000001-0000-0000-0000-000000000004', 'CRS001', 'บทที่ 4: รวมหลายตารางด้วย JOIN', 'ความแตกต่างระหว่าง INNER JOIN และ LEFT JOIN ในงานจริง', 4, 7),
-('a0000001-0000-0000-0000-000000000005', 'CRS001', 'บทที่ 5: การสรุป Insight และสร้าง View สำหรับ Dashboard', 'การสร้าง View เพื่อให้โปรแกรม BI นำข้อมูลไปใช้ต่อได้ทันที', 5, 8),
-('b0000001-0000-0000-0000-000000000001', 'CRS002', 'บทที่ 1: การนำเข้าข้อมูลและการเตรียมข้อมูลใน Power Query', 'ล้างข้อมูลแปลงชนิดข้อมูล และรวมชีตหลายไฟล์', 1, 6),
-('b0000001-0000-0000-0000-000000000002', 'CRS002', 'บทที่ 2: พื้นฐาน DAX และการสร้าง Measure', 'สูตรคำนวณยอดขายรวม เติบโต MoM และฟังก์ชัน CALCULATE', 2, 8),
-('c0000001-0000-0000-0000-000000000001', 'CRS003', 'บทที่ 1: พื้นฐาน React Component และ Props', 'การแยกชิ้นส่วน UI และการส่งผ่านข้อมูลด้วย Props', 1, 6),
-('c0000001-0000-0000-0000-000000000002', 'CRS003', 'บทที่ 2: ตกแต่ง UI อย่างรวดเร็วด้วย Tailwind CSS', 'การใช้ Utility-first class ในการจัด Layout และ Flexbox', 2, 5),
-('c0000001-0000-0000-0000-000000000003', 'CRS003', 'บทที่ 3: จัดการ State ด้วย useState และ useEffect', 'การจำลองและดึงข้อมูลแบบ Real-time จาก Backend API', 3, 7);
+-- 2.2 ตารางทักษะที่ผู้ใช้มี (User Skills)
+CREATE TABLE user_skills (
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    skill_id INT REFERENCES skills(id) ON DELETE CASCADE,
+    level INT DEFAULT 1 CHECK (level BETWEEN 1 AND 5), -- ระดับ 1-5
+    PRIMARY KEY (user_id, skill_id)
+);
 
--- ========================================================
--- 8. เพิ่มแบบทดสอบ Quiz (Quizzes)
--- ========================================================
-INSERT INTO quizzes (id, course_id, lesson_order, question, option_1, option_2, option_3, option_4, correct_answer_index, explanation) VALUES
-('QZ001', 'CRS001', 3, 'คำสั่ง SQL ใดใช้สำหรับจัดกลุ่มข้อมูลเพื่อหาผลรวมรายแผนก?', 'ORDER BY department', 'GROUP BY department', 'FILTER BY department', 'SELECT DISTINCT department', 1, 'GROUP BY ใช้สำหรับจัดกลุ่มแถวที่มีค่าเหมือนกันเพื่อทำการคำนวณแบบ Aggregate เช่น SUM, AVG, COUNT'),
-('QZ002', 'CRS001', 4, 'หากต้องการเชื่อมโยงตารางคำสั่งซื้อ (Orders) กับตารางลูกค้า (Customers) โดยเอาเฉพาะข้อมูลที่มีคู่ตรงกันเท่านั้น ควรใช้ JOIN ประเภทใด?', 'LEFT JOIN', 'FULL OUTER JOIN', 'INNER JOIN', 'CROSS JOIN', 2, 'INNER JOIN จะดึงเฉพาะแถวที่มีค่าคีย์ตรงกันทั้งสองตารางเท่านั้น'),
-('QZ003', 'CRS002', 2, 'ภาษา DAX ใน Power BI ย่อมาจากอะไรและมีหน้าที่หลักคืออะไร?', 'Data Analysis Expressions ใช้คำนวณและสร้าง Measure', 'Database Action XML ใช้แปลงโค้ดฐานข้อมูล', 'Dynamic Animation X ใช้ขยับกราฟฟิก', 'Data Access Extension ใช้ดึงไฟล์ Excel', 0, 'DAX (Data Analysis Expressions) เป็นชุดภาษาฟังก์ชันสำหรับการคำนวณ Measure และ Calculated Column ใน Power BI'),
-('QZ004', 'CRS003', 3, 'ใน React Hook ตัวใดที่ใช้สำหรับเก็บและเปลี่ยนแปลงสถานะข้อมูลภายใน Component?', 'useEffect', 'useContext', 'useState', 'useMemo', 2, 'useState เป็น Hook พื้นฐานที่ใช้สร้างตัวแปร State และฟังก์ชันสำหรับอัปเดตสถานะข้อมูล'),
-('QZ005', 'CRS005', 2, 'เทคนิคการ Prompt แบบ "Few-Shot Prompting" หมายถึงข้อใด?', 'การส่งคำสั่งให้ AI ตอบสั้นที่สุด 1 บรรทัด', 'การให้ตัวอย่างคำถาม-คำตอบ (Examples) แก่ AI ก่อนเพื่อให้คำตอบแม่นยำขึ้น', 'การสั่งให้ AI สวมบทบาทเป็นคนอื่น', 'การเขียนคำถามซ้ำๆ 3 ครั้งเพื่อความถูกต้อง', 1, 'Few-shot Prompting คือการยกตัวอย่าง Input และ Output ให้โมเดลเรียนรู้แพทเทิร์นก่อนสร้างผลลัพธ์จริง');
+-- 2.3 ตารางทักษะที่จะได้รับจากคอร์สเรียน (Course Skills)
+CREATE TABLE course_skills (
+    course_id INT REFERENCES courses(id) ON DELETE CASCADE,
+    skill_id INT REFERENCES skills(id) ON DELETE CASCADE,
+    skill_boost_level INT DEFAULT 1, -- เรียนจบแล้วเพิ่มระดับทักษะเท่าไหร่
+    PRIMARY KEY (course_id, skill_id)
+);
 
--- ========================================================
--- 9. เพิ่มข้อมูลผู้ใช้ตัวอย่าง, การตั้งค่า, ประวัติ & Skill Passport
--- ========================================================
-INSERT INTO users (id, email, password_hash, full_name, avatar_url, target_role, job_status, readiness_score, bio, phone) VALUES
-('e1111111-1111-1111-1111-111111111111', 'somchai@skillup.in.th', '$2a$12$K89g7h6f5d4s3a2z1x0c9v8b7n6m5l4k3j2h1g0f9e8d7c6b5a4', 'สมชาย ใจดี', 'https://assets.skillup.in.th/avatars/somchai.png', 'Junior Data Analyst', 'job_ready', 88, 'มุ่งมั่นพัฒนาทักษะด้านการวิเคราะห์ข้อมูลและ AI เพื่อต่อยอดการทำงาน', '0812345678');
+-- 2.4 ตารางทักษะที่งานต้องการ (Job Skills - สำหรับใช้เปรียบเทียบตลาดงาน)
+CREATE TABLE job_skills (
+    job_id INT REFERENCES jobs(id) ON DELETE CASCADE,
+    skill_id INT REFERENCES skills(id) ON DELETE CASCADE,
+    required_level INT DEFAULT 1 CHECK (required_level BETWEEN 1 AND 5),
+    PRIMARY KEY (job_id, skill_id)
+);
 
-INSERT INTO user_settings (user_id, push_notifications, dark_mode, language) VALUES
-('e1111111-1111-1111-1111-111111111111', TRUE, FALSE, 'TH');
-
-INSERT INTO user_certified_skills (user_id, skill_name, issuer, icon_name, is_verified) VALUES
-('e1111111-1111-1111-1111-111111111111', 'SQL Data Query', 'SkillUp Thailand', 'database', TRUE),
-('e1111111-1111-1111-1111-111111111111', 'Power BI Analytics', 'SkillUp Thailand', 'bar-chart', TRUE),
-('e1111111-1111-1111-1111-111111111111', 'Generative AI for Business', 'SkillUp Thailand', 'sparkles', TRUE),
-('e1111111-1111-1111-1111-111111111111', 'Excel Advanced Functions', 'SkillUp Thailand', 'table', TRUE);
-
-INSERT INTO user_course_history (user_id, course_id, last_lesson_id, status, progress_percent) VALUES
-('e1111111-1111-1111-1111-111111111111', 'CRS001', 'a0000001-0000-0000-0000-000000000005', 'completed', 100),
-('e1111111-1111-1111-1111-111111111111', 'CRS002', 'b0000001-0000-0000-0000-000000000002', 'in_progress', 65);
-
-INSERT INTO saved_courses (user_id, course_id) VALUES
-('e1111111-1111-1111-1111-111111111111', 'CRS003'),
-('e1111111-1111-1111-1111-111111111111', 'CRS005');
-
-INSERT INTO user_skill_gaps (user_id, skill_id, urgency_score, is_acquired) VALUES
-('e1111111-1111-1111-1111-111111111111', 1, 95, TRUE),   -- SQL (ได้แล้ว)
-('e1111111-1111-1111-1111-111111111111', 2, 85, TRUE),   -- Power BI (ได้แล้ว)
-('e1111111-1111-1111-1111-111111111111', 3, 90, TRUE),   -- Excel (ได้แล้ว)
-('e1111111-1111-1111-1111-111111111111', 4, 75, FALSE);  -- Data Cleaning (กำลังเติม)
-
--- ========================================================
--- 10. เพิ่มประวัติการสนทนา AI Mentor Chatbot
--- ========================================================
-INSERT INTO chat_sessions (id, user_id, session_type, target_role, title) VALUES
-('f1111111-1111-1111-1111-111111111111', 'e1111111-1111-1111-1111-111111111111', 'career_advice', 'Junior Data Analyst', 'ปรึกษาเส้นทางอาชีพ Data Analyst');
-
-INSERT INTO chat_messages (session_id, sender_type, message_text) VALUES
-('f1111111-1111-1111-1111-111111111111', 'ai', 'สวัสดีครับคุณสมชาย! ผมคือ AI Mentor ประจำเส้นทาง Data Analyst ปัจจุบันบริษัทต้องการคนที่ใช้ SQL และทำ Dashboard ด้วย Power BI เก่งมาก วันนี้อยากให้ผมช่วยดูเรื่องคอร์สเรียนหรือตำแหน่งงานแนะนำดีครับ?'),
-('f1111111-1111-1111-1111-111111111111', 'user', 'อยากรู้ว่าทักษะที่มีอยู่ตอนนี้สามารถยื่นสมัคร Junior Data Analyst ที่เงินเดือน 35k ได้เลยไหม?'),
-('f1111111-1111-1111-1111-111111111111', 'ai', 'จาก Skill Passport ของคุณ มี SQL และ Power BI ผ่านการรับรองแล้ว ถือว่าตรงกับความต้องการของ TechVanguard Solutions ถึง 85% เลยครับ! แนะนำให้เรียนจบคอร์ส Data Cleaning อีกนิดเดียว ก็พร้อมกดส่งใบสมัครได้ทันทีครับ!');
-
--- ========================================================
--- 1. เพิ่มทักษะใหม่ใน Master Tags (Skills Tags 61 - 80)
--- ========================================================
-INSERT INTO skills_tags (id, name, category) VALUES
-(61, 'TypeScript', 'Software & Web Development'),
-(62, 'Next.js', 'Software & Web Development'),
-(63, 'PostgreSQL', 'Database'),
-(64, 'GraphQL', 'Software & Web Development'),
-(65, 'Kubernetes', 'DevOps & Cloud'),
-(66, 'CI/CD Pipeline', 'DevOps & Cloud'),
-(67, 'Prompt Chaining', 'Data & AI'),
-(68, 'PyTorch', 'Data & AI'),
-(69, 'Pandas & NumPy', 'Data & AI'),
-(70, 'Tableau', 'Data & AI'),
-(71, 'Financial Modeling', 'Finance & Accounting'),
-(72, 'Accounting Standards (TFRS)', 'Finance & Accounting'),
-(73, 'Video Editing (Premiere Pro/CapCut)', 'Design & Creative'),
-(74, 'Content Marketing', 'Digital Marketing'),
-(75, 'Motion Graphics', 'Design & Creative'),
-(76, 'HR Tech & Payroll', 'Human Resources'),
-(77, 'Talent Acquisition', 'Human Resources'),
-(78, 'Scrum Master / Agile', 'Management & Process'),
-(79, 'Customer Service Excellence', 'Sales & Operations'),
-(80, 'Cyber Threat Intelligence', 'Cybersecurity')
-ON CONFLICT (id) DO NOTHING;
-
-SELECT setval('skills_tags_id_seq', (SELECT MAX(id) FROM skills_tags));
-
--- ========================================================
--- 2. เพิ่มตำแหน่งงานใหม่จากเว็บหางาน (JOB016 - JOB030)
--- ========================================================
-INSERT INTO jobs (id, title, company, location, salary_min, salary_max, category, experience, missing_skill_recommendation) VALUES
-('JOB016', 'Full-Stack Next.js Developer', 'Siam Scale Digital Co., Ltd.', 'กรุงเทพฯ (BTS พร้อมพงษ์ / Hybrid)', 40000, 65000, 'Software & Web Development', '1-3 ปี', 'TypeScript & Next.js App Router'),
-('JOB017', 'Data Engineer (Junior to Mid)', 'Krungthai BigData Labs', 'กรุงเทพฯ (นานา / Hybrid)', 38000, 58000, 'Data & AI', '1-3 ปี', 'ETL Pipeline with PostgreSQL & Docker'),
-('JOB018', 'AI Workflow & Prompt Specialist', 'Creative AI Enterprise', 'กรุงเทพฯ (สยาม / Remote 100%)', 30000, 45000, 'Data & AI', '0-2 ปี', 'Advanced Prompt Engineering & Automation'),
-('JOB019', 'Short-Form Video Content Creator', 'Viral Trend Studio', 'กรุงเทพฯ (รัชดาภิเษก)', 24000, 35000, 'Design & Creative', '0-2 ปี', 'CapCut Viral Editing & TikTok Growth'),
-('JOB020', 'Junior Cloud DevOps Engineer', 'Alpha Cloud Infrastructure', 'กรุงเทพฯ (ลาดพร้าว)', 35000, 52000, 'Cloud & Infrastructure', '1-2 ปี', 'CI/CD with GitHub Actions & Docker'),
-('JOB021', 'HR & People Operations Executive', 'Thai People Global', 'กรุงเทพฯ (สาทร)', 26000, 38000, 'Human Resources', '1-2 ปี', 'HR Tech System & Modern Payroll'),
-('JOB022', 'Junior Financial & Investment Analyst', 'Capital First Advisory', 'กรุงเทพฯ (สีลม)', 35000, 50000, 'Finance & Accounting', '0-2 ปี', 'Financial Modeling & Advanced Excel'),
-('JOB023', 'Customer Experience (CX) Specialist', 'E-Shop Platform Co.', 'กรุงเทพฯ (พระราม 3 / Remote)', 23000, 32000, 'Sales & Operations', '0-1 ปี', 'CRM Management & Service Excellence'),
-('JOB024', 'Motion Graphic & 2D Animator', 'Pixel Craft Agency', 'เชียงใหม่ (นิมมาน)', 27000, 40000, 'Design & Creative', '1-3 ปี', 'After Effects & Social Media Motion'),
-('JOB025', 'Junior Agile Project Coordinator', 'InnoSprint Thailand', 'ขอนแก่น (เมือง)', 25000, 37000, 'Management & Process', '0-2 ปี', 'Scrum Sprint Planning & Jira Workflows'),
-('JOB026', 'Cybersecurity SOC Analyst L1', 'CyberShield Asia', 'กรุงเทพฯ (พญาไท)', 32000, 46000, 'Cybersecurity', '0-2 ปี', 'Log Triage & Threat Intelligence'),
-('JOB027', 'E-Commerce Live Streamer & Host', 'Mega Live Commerce', 'สมุทรปราการ (บางนา)', 25000, 50000, 'E-Commerce', '0-2 ปี', 'Live Sales Script & Real-Time Closing'),
-('JOB028', 'Junior Mobile React Native Dev', 'NextApp Solutions', 'กรุงเทพฯ (อารีย์ / Hybrid)', 34000, 48000, 'Software & Web Development', '1-2 ปี', 'React Native & Mobile UI/UX'),
-('JOB029', 'SEO Content & Copywriting Specialist', 'Search Rank Media', 'กรุงเทพฯ (ห้วยขวาง)', 26000, 38000, 'Digital Marketing', '1-2 ปี', 'SEO On-Page & AI Assisted Copywriting'),
-('JOB030', 'Accountant & Tax Compliance Officer', 'Prime Audit & Tax', 'นนทบุรี (งามวงศ์วาน)', 28000, 40000, 'Finance & Accounting', '1-3 ปี', 'TFRS Accounting & Thai Corporate Tax')
-ON CONFLICT (id) DO NOTHING;
-
--- ========================================================
--- 3. ผูกทักษะที่งานใหม่ต้องการ (Job Skills)
--- ========================================================
-INSERT INTO job_skills (job_id, skill_id) VALUES
-('JOB016', 61), ('JOB016', 62), ('JOB016', 6), ('JOB016', 7),
-('JOB017', 1), ('JOB017', 63), ('JOB017', 13), ('JOB017', 69),
-('JOB018', 26), ('JOB018', 67), ('JOB018', 29), ('JOB018', 28),
-('JOB019', 73), ('JOB019', 74), ('JOB019', 21), ('JOB019', 20),
-('JOB020', 30), ('JOB020', 13), ('JOB020', 65), ('JOB020', 66),
-('JOB021', 76), ('JOB021', 77), ('JOB021', 3),
-('JOB022', 71), ('JOB022', 3), ('JOB022', 37),
-('JOB023', 79), ('JOB023', 49), ('JOB023', 50),
-('JOB024', 75), ('JOB024', 22), ('JOB024', 21),
-('JOB025', 78), ('JOB025', 34), ('JOB025', 29),
-('JOB026', 38), ('JOB026', 39), ('JOB026', 80),
-('JOB027', 20), ('JOB027', 18), ('JOB027', 79),
-('JOB028', 5), ('JOB028', 6), ('JOB028', 8),
-('JOB029', 17), ('JOB029', 28), ('JOB029', 16),
-('JOB030', 72), ('JOB030', 3), ('JOB030', 46)
-ON CONFLICT (job_id, skill_id) DO NOTHING;
-
--- ========================================================
--- 4. เพิ่มคอร์สเรียนใหม่อีก 5 คอร์ส (CRS011 - CRS015)
--- ========================================================
-INSERT INTO courses (id, title, category, summary, cover_image_url, duration_text, difficulty_level, rating, instructor, badge_earned, total_lessons, like_count, share_count) VALUES
-('CRS011', 'Next.js & TypeScript สำหรับ Production Web App', 'Software & Web Development', 'สร้างเว็บระดับโปรด้วย Server Components, App Router และ Type Safety', 'https://assets.skillup.in.th/courses/nextjs-ts.png', '7 ชั่วโมง 20 นาที', 'ระดับกลาง', 4.92, 'ชานนท์ เว็บฟูลสแตก', 'Next.js Certified Dev', 6, 215, 34),
-('CRS012', 'Data Science & Machine Learning พื้นฐานด้วย Python', 'Data & AI', 'จัดการตารางข้อมูลด้วย Pandas และเทรนโมเดลจำแนกข้อมูลเบื้องต้น', 'https://assets.skillup.in.th/courses/python-ds.png', '8 ชั่วโมง', 'ผู้เริ่มต้น-ระดับกลาง', 4.88, 'ดร. กัลยา ดาต้าไซน์', 'Data Science Foundation', 6, 430, 78),
-('CRS013', 'ตัดต่อวิดีโอสั้น TikTok & Reels ให้ได้ยอดวิวหลักล้าน', 'Design & Creative', 'เทคนิคเล่าเรื่อง การตัดต่อแบบ Fast-Paced และการใส่ Subtitle ดึงดูดสายตา', 'https://assets.skillup.in.th/courses/video-creator.png', '3 ชั่วโมง 30 นาที', 'ผู้เริ่มต้น', 4.80, 'โค้ชเบนซ์ วิดีโอไวรัล', 'Viral Creator Pro', 4, 380, 95),
-('CRS014', 'การเงินและ Financial Modeling สำหรับธุรกิจและการลงทุน', 'Finance & Accounting', 'สร้างโมเดลจำลองรายได้ กำไร และวิเคราะห์ความคุ้มค่าโครงการด้วย Excel', 'https://assets.skillup.in.th/courses/finance-model.png', '6 ชั่วโมง 15 นาที', 'ระดับกลาง', 4.75, 'วรภัทร วาณิชธนกิจ', 'Financial Analyst Badge', 5, 160, 22),
-('CRS015', 'Agile & Scrum สำหรับผู้จัดการโครงการยุคใหม่', 'Management & Process', 'ขับเคลื่อนทีมทำงานด้วย Sprint, Stand-up Meeting และการจัดลำดับ Backlog', 'https://assets.skillup.in.th/courses/agile-scrum.png', '4 ชั่วโมง', 'ผู้เริ่มต้น', 4.90, 'ธนกฤต อไจล์โค้ช', 'Certified Scrum Master', 4, 290, 45)
-ON CONFLICT (id) DO NOTHING;
-
--- ผูกทักษะให้กับคอร์สใหม่
-INSERT INTO course_skills (course_id, skill_id) VALUES
-('CRS011', 61), ('CRS011', 62), ('CRS011', 6),
-('CRS012', 69), ('CRS012', 68), ('CRS012', 37),
-('CRS013', 73), ('CRS013', 74), ('CRS013', 20),
-('CRS014', 71), ('CRS014', 3), ('CRS014', 37),
-('CRS015', 78), ('CRS015', 34), ('CRS015', 29)
-ON CONFLICT (course_id, skill_id) DO NOTHING;
-
--- ========================================================
--- 5. เพิ่มแบบทดสอบ Quiz ใหม่ (QZ006 - QZ010)
--- ========================================================
-INSERT INTO quizzes (id, course_id, lesson_order, question, option_1, option_2, option_3, option_4, correct_answer_index, explanation) VALUES
-('QZ006', 'CRS011', 2, 'ใน Next.js App Router คอมโพเนนต์ประเภทใดที่เป็น Default?', 'Client Component', 'Server Component', 'Static Component', 'Dynamic Hook', 1, 'Next.js App Router กำหนดให้ทุกคอมโพเนนต์เป็น Server Component โดยเริ่มต้น เพื่อลดขนาด Bundle ฝั่ง Client'),
-('QZ007', 'CRS012', 2, 'ไลบรารีใดใน Python ที่นิยมใช้สำหรับการจัดการและทำความสะอาดโครงสร้างตารางข้อมูลมากที่สุด?', 'NumPy', 'Pandas', 'Matplotlib', 'Scikit-Learn', 1, 'Pandas มีโครงสร้างข้อมูล DataFrame ที่ออกแบบมาเพื่อการจัดการ กรอง และแปลงตารางข้อมูลโดยเฉพาะ'),
-('QZ008', 'CRS013', 1, 'ช่วงเวลาใดของวิดีโอสั้นที่มีความสำคัญที่สุดในการตรึงสายตาผู้ชม (Hook Rate)?', '3 วินาทีแรก', '30 วินาทีแรก', 'ช่วงกลางคลิป', 'ช่วงท้ายคลิป', 0, 'ช่วง 3 วินาทีแรก (Hook) มีความสำคัญสูงสุดในการตัดสินใจของผู้ใช้งานว่าจะเลื่อนผ่านหรือดูต่อ'),
-('QZ009', 'CRS014', 3, 'เมตริกทางการเงินใดที่ใช้ประเมินอัตราผลตอบแทนที่ทำให้มูลค่าปัจจุบันสุทธิ (NPV) เท่ากับศูนย์?', 'ROI', 'Payback Period', 'IRR (Internal Rate of Return)', 'WACC', 2, 'IRR คืออัตราคิดลดที่ทำให้มูลค่าปัจจุบันสุทธิของกระแสเงินสดโครงการมีค่าเท่ากับศูนย์'),
-('QZ010', 'CRS015', 2, 'พิธีกรรม (Scrum Event) ใดที่จัดขึ้นท้าย Sprint เพื่อให้ทีมมองย้อนกลับมาปรับปรุงกระบวนการทำงาน?', 'Sprint Planning', 'Daily Stand-up', 'Sprint Review', 'Sprint Retrospective', 3, 'Sprint Retrospective จัดขึ้นเพื่อให้ทีมสะท้อนปัญหาและหาแนวทางพัฒนาการทำงานร่วมกันใน Sprint ถัดไป')
-ON CONFLICT (id) DO NOTHING;
+-- 2.5 ตารางประวัติการแชทกับ AI (Chatbot Logs)
+CREATE TABLE chatbot_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    is_ai_reply BOOLEAN DEFAULT FALSE, -- TRUE = คำตอบจาก AI, FALSE = คำถามจาก User
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
