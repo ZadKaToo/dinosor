@@ -7,8 +7,8 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -28,7 +28,7 @@
             "primary": "#0d1b3e",
           },
           fontFamily: {
-            sans: ["Prompt", "Hanken Grotesk", "sans-serif"],
+            sans: ["Prompt", "Sarabun", "sans-serif"],
           }
         }
       }
@@ -36,7 +36,9 @@
   </script>
   <style>
     body {
-      font-family: 'Prompt', 'Hanken Grotesk', sans-serif;
+      font-family: 'Prompt', 'Sarabun', sans-serif;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
     }
     @keyframes slideInLeft {
       from { opacity: 0; transform: translateX(-10px) translateY(10px); }
@@ -47,10 +49,12 @@
       to { opacity: 1; transform: translateX(0) translateY(0); }
     }
     
-    /* ซ่อน Scrollbar ทุกแพลตฟอร์ม */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+    .prose-custom {
+      line-height: 1.6;
+    }
     .prose-custom h3 {
       font-weight: 700;
       color: #0d1b3e;
@@ -78,23 +82,26 @@
 <body class="bg-background">
 <main class="relative w-full max-w-md mx-auto min-h-screen bg-background shadow-2xl flex flex-col">
   <!-- Top Bar -->
-  <div class="flex items-center p-4 bg-surface-container-lowest shadow-sm z-10 sticky top-0">
+  <div class="flex items-center justify-between p-4 bg-surface-container-lowest shadow-sm z-10 sticky top-0">
     <div class="flex items-center gap-3">
-      <button aria-label="Go back" class="p-2 text-on-surface hover:bg-surface-container rounded-full transition-colors">
-        <span class="material-symbols-outlined text-[24px]">arrow_back</span>
-      </button>
       <div class="relative">
         <img alt="AI Mentor Avatar" class="w-10 h-10 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTwR-ld26Szf1gyYX2otWHXDwFHmsE8-f9wu2Ob5lCAhe189W348v2IkFsdtnYAWfHwZ7uvi5hSvhh4aGP0p4Ug17h_lbdhA-yRJhR9oGt8K3vL_AgfzX41QihGRm--5vxfvh2Rg-gpoF7ZJFpvy82iqwifWIhVT56AXr0jbQnf7nXQi7yq2UTXRALyVm-hTDBsyxFJTifULVY26vXSkcm4xxh0Ith76GWLZnscua1uAOLkc01QIWl"/>
         <div class="absolute bottom-0 right-0 w-3 h-3 bg-[#00C076] rounded-full ring-2 ring-surface-container-lowest"></div>
       </div>
       <div class="flex flex-col">
-        <span class="font-bold text-on-surface text-sm">AI Mentor</span>
-        <span class="text-xs text-on-surface-variant flex items-center gap-1">
+        <span class="font-bold text-on-surface text-sm">AI Career Mentor</span>
+        <span class="text-xs text-[#00C076] flex items-center gap-1 font-medium">
           <span class="w-1.5 h-1.5 bg-[#00C076] rounded-full inline-block"></span>
           Online
         </span>
       </div>
     </div>
+
+    <!-- ปุ่มวิเคราะห์ Top 3 อาชีพที่เพิ่มเข้ามา -->
+    <button onclick="requestCareerAnalysis()" class="flex items-center gap-1 text-xs font-semibold bg-[#0D1B3E] text-white px-3 py-1.5 rounded-xl hover:bg-blue-900 transition-all shadow-sm active:scale-95">
+      <span class="material-symbols-outlined text-[16px]">analytics</span>
+      <span>วิเคราะห์ Top 3</span>
+    </button>
   </div>
 
   <!-- Chat Area -->
@@ -108,7 +115,7 @@
       <img alt="AI" class="w-8 h-8 rounded-full flex-shrink-0 mt-1 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTwR-ld26Szf1gyYX2otWHXDwFHmsE8-f9wu2Ob5lCAhe189W348v2IkFsdtnYAWfHwZ7uvi5hSvhh4aGP0p4Ug17h_lbdhA-yRJhR9oGt8K3vL_AgfzX41QihGRm--5vxfvh2Rg-gpoF7ZJFpvy82iqwifWIhVT56AXr0jbQnf7nXQi7yq2UTXRALyVm-hTDBsyxFJTifULVY26vXSkcm4xxh0Ith76GWLZnscua1uAOLkc01QIWl"/>
       <div class="bg-surface-container-low p-3.5 rounded-2xl rounded-tl-none shadow-sm">
         <p class="text-sm text-on-surface leading-relaxed">
-          สวัสดีครับ ผมคือ AI Mentor ผู้ช่วยวางแผนเส้นทางอาชีพ IT ของคุณ วันนี้ต้องการปรึกษาเรื่องการเตรียมตัว ทักษะที่ต้องใช้ หรือการสัมภาษณ์งานด้านใดครับ
+          สวัสดีครับ ผมคือ AI Mentor ผู้ช่วยวางแผนเส้นทางอาชีพ IT ของคุณ วันนี้ต้องการปรึกษาเรื่องการเตรียมตัว ทักษะที่ต้องใช้ หรือการสัมภาษณ์งานด้านใดครับ (เมื่อคุยไประยะหนึ่งสามารถกดปุ่ม <b>"วิเคราะห์ Top 3"</b> ด้านบนได้เลยครับ)
         </p>
       </div>
     </div>
@@ -150,8 +157,15 @@
 </main>
 
 <script>
-  const API_URL = "https://curvy-geese-do.loca.lt/api/mentor";
+  const API_URL = "https://fvccmpvjvahvoqglfizt.supabase.co/functions/v1/mentor";
   const AVATAR_URL = "https://lh3.googleusercontent.com/aida-public/AB6AXuCTwR-ld26Szf1gyYX2otWHXDwFHmsE8-f9wu2Ob5lCAhe189W348v2IkFsdtnYAWfHwZ7uvi5hSvhh4aGP0p4Ug17h_lbdhA-yRJhR9oGt8K3vL_AgfzX41QihGRm--5vxfvh2Rg-gpoF7ZJFpvy82iqwifWIhVT56AXr0jbQnf7nXQi7yq2UTXRALyVm-hTDBsyxFJTifULVY26vXSkcm4xxh0Ith76GWLZnscua1uAOLkc01QIWl";
+
+  // ดึงหรือจำลอง Anonymous UUID สำหรับเก็บประวัติรายบุคคล
+  let currentUserId = localStorage.getItem("app_user_id");
+  if (!currentUserId) {
+    currentUserId = "user-" + Math.random().toString(36).substring(2, 10);
+    localStorage.setItem("app_user_id", currentUserId);
+  }
 
   const chatContainer = document.getElementById('chat-container');
   const userInput = document.getElementById('user-input');
@@ -240,10 +254,12 @@
       const response = await fetch(API_URL, {
         method: "POST",
         headers: { 
-          "Content-Type": "application/json",
-          "Bypass-Tunnel-Reminder": "true"
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ message: message })
+        body: JSON.stringify({ 
+          message: message,
+          user_id: currentUserId 
+        })
       });
 
       const data = await response.json();
@@ -279,6 +295,13 @@
       chatContainer.insertAdjacentHTML('beforeend', errorBubble);
       scrollToBottom();
     }
+  }
+
+  // ================= ฟังก์ชันขอให้ AI วิเคราะห์ 3 สายงานที่เหมาะกับเรา =================
+  async function requestCareerAnalysis() {
+    const analysisPrompt = "ช่วยวิเคราะห์ประวัติการพูดคุยและคำถามทั้งหมดที่ผ่านมาของฉัน แล้วสรุปออกมาเป็น 3 สายงาน IT ที่เหมาะสมกับฉันมากที่สุด พร้อมเปอร์เซ็นต์ความเหมาะสม และเหตุผลสั้นๆ ชัดเจน";
+    userInput.value = analysisPrompt;
+    await sendMessage();
   }
 </script>
 </body>
