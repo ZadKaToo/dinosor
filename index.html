@@ -160,10 +160,10 @@
   const API_URL = "https://fvccmpvjvahvoqglfizt.supabase.co/functions/v1/mentor";
   const AVATAR_URL = "https://lh3.googleusercontent.com/aida-public/AB6AXuCTwR-ld26Szf1gyYX2otWHXDwFHmsE8-f9wu2Ob5lCAhe189W348v2IkFsdtnYAWfHwZ7uvi5hSvhh4aGP0p4Ug17h_lbdhA-yRJhR9oGt8K3vL_AgfzX41QihGRm--5vxfvh2Rg-gpoF7ZJFpvy82iqwifWIhVT56AXr0jbQnf7nXQi7yq2UTXRALyVm-hTDBsyxFJTifULVY26vXSkcm4xxh0Ith76GWLZnscua1uAOLkc01QIWl";
 
-  // ดึงหรือจำลอง Anonymous UUID สำหรับเก็บประวัติรายบุคคล
+  // ดึงค่า UUID ของสมชาย ใจดี จากในตาราง users มาทดสอบ
   let currentUserId = localStorage.getItem("app_user_id");
-  if (!currentUserId) {
-    currentUserId = "user-" + Math.random().toString(36).substring(2, 10);
+  if (!currentUserId || currentUserId.startsWith("user-")) {
+    currentUserId = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd387500"; 
     localStorage.setItem("app_user_id", currentUserId);
   }
 
