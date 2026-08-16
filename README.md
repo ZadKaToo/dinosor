@@ -1,4 +1,4 @@
-****Skill Up****
+# Skill Up
 
 โปรเจกต์นี้ทำมาช่วยคนที่อยากเริ่มสาย IT หรืออยากอัปสกิลตัวเองให้มี Roadmap ชัดเจน ไม่ต้องเดาทางเอง มีระบบลองเขียนโค้ดจริง ปรึกษา AI ได้ตลอด แถมยังคอยวัดระดับสกิลเพื่อปลดล็อก Tier เงินเดือนให้เห็นภาพการเติบโตแบบชัดๆ ด้วย
 
@@ -28,32 +28,32 @@
 
 ****โครงสร้างโปรเจกต์ (Project Structure)****
 
-        lib/screens/ - รวมหน้าจอหลักทั้งหมด (Dashboard, Roadmap, Sandbox, Chat)
+     lib/screens/ - รวมหน้าจอหลักทั้งหมด (Dashboard, Roadmap, Sandbox, Chat)
         
-        lib/services/ - โค้ดฝั่งจัดการข้อมูลและ Logic (Auth, Course, Skill, AI Chat ฯลฯ)
+    lib/services/ - โค้ดฝั่งจัดการข้อมูลและ Logic (Auth, Course, Skill, AI Chat ฯลฯ)
         
-        lib/models/ - Data Models ต่างๆ ในแอป
+    lib/models/ - Data Models ต่างๆ ในแอป
         
-        lib/assets/ - เก็บไฟล์ pyodide_sandbox.html ที่ใช้รัน Python
+    lib/assets/ - เก็บไฟล์ pyodide_sandbox.html ที่ใช้รัน Python
         
-        supabase_schema.sql - ไฟล์ SQL สำหรับตั้งค่า Database บน Supabase
+    supabase_schema.sql - ไฟล์ SQL สำหรับตั้งค่า Database บน Supabase
 
 **Tech Stack ที่ใช้**
 
-        Frontend: Flutter (Dart)
+    Frontend: Flutter (Dart)
         
-        Backend: Supabase (PostgreSQL)
+    Backend: Supabase (PostgreSQL)
         
-        Code Runner: Pyodide (Python WebAssembly)
+    Code Runner: Pyodide (Python WebAssembly)
 
 ****สำหรับ Dev ที่จะเอาไปรันต่อ****
 
 ลง Dependencies ก่อน
 
-        flutter pub get
+    flutter pub get
         
 เอาไฟล์ supabase_schema.sql (และ supabase_persistence_migration.sql ถ้ามี) ไปรันใน SQL Editor ของ Supabase
         
 สั่งรันแอปได้เลย:
         
-        flutter run   
+    flutter run   
