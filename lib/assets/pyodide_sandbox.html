@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="">
+<head>
+    <meta charset="UTF-8">
+    <title>Pyodide Engine Bridge</title>
+</head>
+<body style="background-color: #080c14; color: #ffffff; font-family: monospace;">
+<div id="status">Loading Pyodide Script from CDN...</div>
+
+<script>
+    // 1. สร้างฟังก์ชันส่งข้อความกลับ Flutter
+    function sendToFlutter(data) {
+        const msg = JSON.stringify(data);
+        if (window.FlutterBridge && window.FlutterBridge.postMessage) {
+            window.FlutterBridge.postMessage(msg);
+        } else if (window.chrome && window.chrome.webview && window.chrome.webview.postMessage) {
+            window.chrome.webview.postMessage(msg);
+        }
+    }
+
+    let pyodide = null;
+
+    // 2. โหลดสคริปต์แบบ Dynamic เพื่อให้แน่ใจว่าโหลดเสร็จก่อนค่อยทำงาน
+    const script = document.createElement('script');
+    script.src = "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js";
+
+    script.onload = async () => {
+        document.getElementById('status').innerText = 'Initializing WASM Engine...';
+        try {
+            // ระบุ indexURL ชี้ไปที่ CDN โดยตรงเพื่อป้องกันปัญหาหาไฟล์ WASM ไม่เจอตอนรันบน Windows
+            pyodide = await loadPyodide({
+                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/",
+                stdout: (text) => sendToFlutter({ type: 'stdout', content: text }),
+                stderr: (text) => sendToFlutter({ type: 'stderr', content: text })
+            });
+            document.getElementById('status').innerText = 'Pyodide Engine Ready';
+            sendToFlutter({ type: 'status', content: 'ready' });
+        } catch (err) {
+            document.getElementById('status').innerText = 'Error loading Pyodide: ' + err;
+            sendToFlutter({ type: 'error', content: err.toString() });
+        }
+    };
+
+    script.onerror = () => {
+        const errorMsg = 'Failed to load Pyodide JS from CDN. กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต';
+        document.getElementById('status').innerText = errorMsg;
+        sendToFlutter({ type: 'error', content: errorMsg });
+    };
+
+    // สั่งให้เริ่มดาวน์โหลดสคริปต์
+    document.head.appendChild(script);
+
+    // 3. ฟังก์ชันสำหรับรับโค้ด Python มาประมวลผล
+    async function runPythonCode(code, inputStr = "") {
+        if (!pyodide) {
+            sendToFlutter({ type: 'error', content: 'Pyodide engine is not ready yet.' });
+            return;
+        }
+
+        try {
+            // Setup Python stdin redirection
+            let wrappedCode = `
+import sys
+import io
+
+class StdinMock:
+    def __init__(self, inputs):
+        self.inputs = inputs.split('\\n')
+        self.idx = 0
+    def readline(self):
+        if self.idx < len(self.inputs):
+            val = self.inputs[self.idx]
+            self.idx += 1
+            return val + '\\n'
+        return ''
+
+sys.stdin = StdinMock("${inputStr.replace(/"/g, '\\"').replace(/\n/g, '\\n')}")
+`;
+            await pyodide.runPythonAsync(wrappedCode + code);
+            // ไม่ส่ง 'completed' เป็น JSON Type เพื่อป้องกันการ Error Parsing ใน Flutter หากไม่จำเป็น
+        } catch (err) {
+            sendToFlutter({ type: 'error', content: err.toString() });
+        }
+    }
+</script>
+</body>
+</html>
